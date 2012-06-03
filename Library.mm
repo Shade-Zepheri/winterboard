@@ -1929,7 +1929,7 @@ static void ChangeWallpaper(
 }
 
 #define WBRename(name, sel, imp) \
-    _ ## name ## $ ## imp = MSHookMessage($ ## name, @selector(sel), &$ ## name ## $ ## imp)
+    MSHookMessage($ ## name, @selector(sel), &$ ## name ## $ ## imp, &_ ## name ## $ ## imp)
 
 template <typename Type_>
 static void msset(Type_ &function, MSImageRef image, const char *name) {
