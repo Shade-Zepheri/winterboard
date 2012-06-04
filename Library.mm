@@ -1534,11 +1534,20 @@ MSHook(void, SBStatusBarTimeView$drawRect$, SBStatusBarTimeView *self, SEL sel, 
 
 @end
 
-MSHook(void, SBIconList$setFrame$, SBIconList *self, SEL sel, CGRect frame) {
+static void SBIconList$updateFrames$(SBIconList *self) {
     NSArray *subviews([self subviews]);
     WBImageView *view([subviews count] == 0 ? nil : [subviews objectAtIndex:0]);
     if (view != nil && [view wb$isWBImageView])
         [view wb$updateFrame];
+}
+
+MSHook(void, SBIconList$didMoveToSuperview, SBIconList *self, SEL sel) {
+    SBIconList$updateFrames$(self);
+    _SBIconList$didMoveToSuperview(self, sel);
+}
+
+MSHook(void, SBIconList$setFrame$, SBIconList *self, SEL sel, CGRect frame) {
+    SBIconList$updateFrames$(self);
     _SBIconList$setFrame$(self, sel, frame);
 }
 
@@ -2014,6 +2023,7 @@ static void SBInitialize() {
     WBRename(SBIconLabel, initWithSize:label:, initWithSize$label$);
     WBRename(SBIconLabel, setInDock:, setInDock$);
 
+    WBRename(SBIconList, didMoveToSuperview, didMoveToSuperview);
     WBRename(SBIconList, setFrame:, setFrame$);
 
     WBRename(SBIconModel, cacheImageForIcon:, cacheImageForIcon$);
