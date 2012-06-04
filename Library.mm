@@ -269,8 +269,7 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
         if (use) {
             if (Scale_ == 2) {
                 [scaled addObject:[NSString stringWithFormat:@"%@@2x~%@.%@", base, idiom, extension]];
-                if (!IsWild_)
-                    [scaled addObject:[NSString stringWithFormat:@"%@@2x.%@", base, extension]];
+                [scaled addObject:[NSString stringWithFormat:@"%@@2x.%@", base, extension]];
             }
 
             [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
@@ -278,20 +277,20 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
             // if (!IsWild_) <- support old themes
             [scaled addObject:file];
         } else if ([base hasSuffix: @"@2x"]) {
-            [scaled addObject:[NSString stringWithFormat:@"%@~iphone.%@", base, extension]];
+            [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
             [scaled addObject:file];
 
             // XXX: this actually can't be used, as the person loading the file doesn't realize that the @2x changed
             /*NSString *rest([base substringWithRange:NSMakeRange(0, [base length] - 3)]);
-            [scaled addObject:[NSString stringWithFormat:@"%@~iphone.%@", rest, extension]];
+            [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", rest, idiom, extension]];
             [scaled addObject:[rest stringByAppendingPathExtension:extension]];*/
         } else {
             // XXX: this code isn't really complete
 
             [scaled addObject:file];
 
-            if ([base hasSuffix:@"~iphone"])
-                [scaled addObject:[[base substringWithRange:NSMakeRange(0, [base length] - 7)] stringByAppendingPathExtension:extension]];
+            if ([base hasSuffix:[NSString stringWithFormat:@"~%@", idiom]])
+                [scaled addObject:[[base substringWithRange:NSMakeRange(0, [base length] - 1 - [idiom length])] stringByAppendingPathExtension:extension]];
         }
     }
 
@@ -341,6 +340,8 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
         NSString *base([folder stringByDeletingPathExtension]);
         if ([base hasSuffix:@"~iphone"])
             [names addObject:[NSString stringWithFormat:@"Folders/%@.%@/%@", [base substringWithRange:NSMakeRange(0, [base length] - 7)], [folder pathExtension], file]];
+        if ([base hasSuffix:@"~ipad"])
+            [names addObject:[NSString stringWithFormat:@"Folders/%@.%@/%@", [base substringWithRange:NSMakeRange(0, [base length] - 5)], [folder pathExtension], file]];
     }
     if (ui)
         [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
