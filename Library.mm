@@ -314,8 +314,11 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
     for (NSString *theme in Themes_)
         for (NSString *file in files) {
             path = [NSString stringWithFormat:@"%@/%@", theme, file];
-            if ([Manager_ fileExistsAtPath:path])
+            if ([Manager_ fileExistsAtPath:path]) {
+                if ([[Manager_ pathContentOfSymbolicLinkAtPath:path] isEqualToString:@"/"])
+                    path = nil;
                 goto set;
+            }
         }
 
     path = nil;
