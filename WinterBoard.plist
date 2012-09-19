@@ -1,5 +1,5 @@
 Filter = {
-    Bundles = ("com.apple.UIKit");
-    Executables = ("lsd");
+    Bundles = ("com.apple.UIKit", "com.apple.ImageIO.framework");
+    Executables = ("lsd", "backboardd");
     Mode = "Any";
 };
