@@ -1972,6 +1972,26 @@ MSHook(void *, CGImageReadCreateWithFile, NSString *path, int flag) {
     [pool release];
     return value;
 }
+
+MSHook(void *, CGImageSourceCreateWithFile, NSString *path, NSDictionary *options) {
+    if (Debug_)
+        NSLog(@"WB:Debug: CGImageSourceCreateWithFile(%@, %@)", path, options);
+    NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
+    void *value(_CGImageSourceCreateWithFile([path wb$themedPath], options));
+    [pool release];
+    return value;
+}
+
+MSHook(void *, CGImageSourceCreateWithURL, NSURL *url, NSDictionary *options) {
+    if (Debug_)
+        NSLog(@"WB:Debug: CGImageSourceCreateWithURL(%@, %@)", url, options);
+    NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
+    if ([url isFileURL])
+        url = [NSURL fileURLWithPath:[[url path] wb$themedPath]];
+    void *value(_CGImageSourceCreateWithURL(url, options));
+    [pool release];
+    return value;
+}
 // }}}
 
 static void NSString$drawAtPoint$withStyle$(NSString *self, SEL _cmd, CGPoint point, NSString *style) {
@@ -2136,6 +2156,16 @@ MSInitialize {
         void *(*CGImageReadCreateWithFile)(NSString *, int);
         msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
         MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
+
+        if (CGImageReadCreateWithFile == NULL) {
+            void *(*CGImageSourceCreateWithFile)(NSString *, NSDictionary *);
+            msset(CGImageSourceCreateWithFile, image, "_CGImageSourceCreateWithFile");
+            MSHookFunction(CGImageSourceCreateWithFile, MSHake(CGImageSourceCreateWithFile));
+
+            void *(*CGImageSourceCreateWithURL)(NSURL *, NSDictionary *);
+            msset(CGImageSourceCreateWithURL, image, "_CGImageSourceCreateWithURL");
+            MSHookFunction(CGImageSourceCreateWithURL, MSHake(CGImageSourceCreateWithURL));
+        }
     }
     // }}}
     // SpringBoard {{{
