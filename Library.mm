@@ -107,6 +107,10 @@ bool _itv;
 
 extern "C" void __clear_cache (char *beg, char *end);
 
+static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_AssociationPolicy policy);
+static id (*$objc_getAssociatedObject)(id object, void *key);
+static void (*$objc_removeAssociatedObjects)(id object);
+
 @protocol WinterBoard
 - (void *) _node;
 @end
@@ -146,8 +150,13 @@ MSClassHook(SBIconBadgeFactory)
 MSClassHook(SBIconContentView)
 MSClassHook(SBIconController)
 MSClassHook(SBIconLabel)
+MSClassHook(SBIconLabelImage)
+MSMetaClassHook(SBIconLabelImage)
+MSClassHook(SBIconLabelImageParameters)
 MSClassHook(SBIconList)
 MSClassHook(SBIconModel)
+MSClassHook(SBIconView)
+MSMetaClassHook(SBIconView)
 //MSClassHook(SBImageCache)
 MSClassHook(SBSearchView)
 MSClassHook(SBSearchTableViewCell)
@@ -1725,6 +1734,37 @@ MSInstanceMessage0(CGImageRef, SBIconLabel, buildLabelImage) {
     return image;
 }
 
+static bool wb$inDock(id parameters) {
+    return [$objc_getAssociatedObject(parameters, @selector(wb$inDock)) boolValue];
+}
+
+MSInstanceMessage0(NSUInteger, SBIconLabelImageParameters, hash) {
+    return MSOldCall() + (wb$inDock(self) ? 0xdeadbeef : 0xd15ea5e);
+}
+
+MSClassMessage2(id, SBIconView, _labelImageParametersForIcon,location, id, icon, int, location) {
+    if (id parameters = MSOldCall(icon, location)) {
+        $objc_setAssociatedObject(parameters, @selector(wb$inDock), [NSNumber numberWithBool:(location == 1)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return parameters;
+    } return nil;
+}
+
+MSClassMessage1(UIImage *, SBIconLabelImage, _drawLabelImageForParameters, id, parameters) {
+    bool docked(wb$inDock(parameters));
+
+    WBStringDrawingState labelState = {NULL, 0, @""
+    , docked ? @"DockedIconLabelStyle" : @"UndockedIconLabelStyle"};
+
+    stringDrawingState_ = &labelState;
+
+    //NSLog(@"XXX: +");
+    UIImage *image(MSOldCall(parameters));
+    //NSLog(@"XXX: -");
+
+    stringDrawingState_ = NULL;
+    return image;
+}
+
 // ChatKit {{{
 MSInstanceMessageHook2(id, CKBalloonView, initWithFrame,delegate, CGRect, frame, id, delegate) {
     if ((self = MSOldCall(frame, delegate)) != nil) {
@@ -2038,8 +2078,13 @@ static void SBInitialize() {
 
     if (kCFCoreFoundationVersionNumber < 600 || SummerBoard_)
         WBRename(SBIconLabel, drawRect:, drawRect$);
-    else
+    else if (kCFCoreFoundationVersionNumber < 700) {
         WBRename(SBIconLabel, buildLabelImage, buildLabelImage);
+    } else {
+        WBRename(SBIconLabelImageParameters, hash, hash);
+        WBRename($SBIconView, _labelImageParametersForIcon:location:, _labelImageParametersForIcon$location$);
+        WBRename($SBIconLabelImage, _drawLabelImageForParameters:, _drawLabelImageForParameters$);
+    }
 
     WBRename(SBIconLabel, initWithSize:label:, initWithSize$label$);
     WBRename(SBIconLabel, setInDock:, setInDock$);
@@ -2073,6 +2118,10 @@ static void SBInitialize() {
 }
 
 MSInitialize {
+    $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
+    $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
+    $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
+
     NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
 
     NSString *identifier([[NSBundle mainBundle] bundleIdentifier]);
