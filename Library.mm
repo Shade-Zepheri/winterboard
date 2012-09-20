@@ -145,8 +145,11 @@ MSClassHook(SBCalendarApplicationIcon)
 MSClassHook(SBCalendarIconContentsView)
 MSClassHook(SBDockIconListView)
 MSClassHook(SBIcon)
+MSClassHook(SBIconAccessoryImage)
+MSMetaClassHook(SBIconAccessoryImage)
 MSClassHook(SBIconBadge)
 MSClassHook(SBIconBadgeFactory)
+MSClassHook(SBIconBadgeImage)
 MSClassHook(SBIconContentView)
 MSClassHook(SBIconController)
 MSClassHook(SBIconLabel)
@@ -183,6 +186,10 @@ static struct MSFixClass { MSFixClass() {
 
 static bool IsWild_;
 static bool Four_($SBDockIconListView != nil);
+
+@interface NSObject (wb$SBIconAccessoryImage)
++ (Class) _imageClassForIcon:(SBIcon *)icon location:(int)location;
+@end
 
 @interface NSDictionary (WinterBoard)
 - (UIColor *) wb$colorForKey:(NSString *)key;
@@ -880,6 +887,21 @@ MSInstanceMessageHook1(CGSize, NSString, sizeWithFont, UIFont *, font) {
 
     NSString *base(state->base_ ?: @"");
     return [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(), base, info] forWidth:65535];
+}
+
+MSClassMessageHook2(UIImage *, SBIconAccessoryImage, checkoutAccessoryImageForIcon,location, id, icon, int, location) {
+    if ([self _imageClassForIcon:icon location:location] != $SBIconBadgeImage)
+        return MSOldCall(icon, location);
+
+    WBStringDrawingState badgeState = {NULL, -1, @""
+    , @"BadgeStyle"};
+
+    stringDrawingState_ = &badgeState;
+
+    UIImage *image(MSOldCall(icon, location));
+
+    stringDrawingState_ = NULL;
+    return image;
 }
 
 MSInstanceMessageHook1(UIImage *, SBIconBadgeFactory, checkoutBadgeImageForText, NSString *, text) {
