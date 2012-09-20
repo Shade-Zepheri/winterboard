@@ -43,7 +43,11 @@ extern "C" {
 - (DOMDocument *) DOMDocument;
 @end
 
-@interface WebView : NSObject
+@interface WAKView : NSObject
+- (void) _drawRect:(CGRect)rect context:(CGContext *)context lockFocus:(bool)focus;
+@end
+
+@interface WebView : WAKView
 - (id) initWithFrame:(CGRect)frame;
 - (WebFrame *) mainFrame;
 - (void) setDrawsBackground:(BOOL)value;
@@ -99,6 +103,25 @@ static WBMarkup *SharedMarkup_;
     [window_ release];
     [view_ release];
     [super dealloc];
+}
+
+- (void) drawRect:(CGRect)rect {
+    [text_ setScrollXOffset:origin_.x scrollYOffset:origin_.y];
+
+    CGRect draw(CGRectMake(0, 0, rect.size.width - rect.origin.x, rect.size.height - rect.origin.y));
+
+    CGContextSaveGState(context_); {
+        CGContextTranslateCTM(context_, rect.origin.x, rect.origin.y);
+
+        if (kCFCoreFoundationVersionNumber > 700)
+            [view_ _drawRect:draw context:context_ lockFocus:YES];
+        else {
+            WKView *view([view_ _viewRef]);
+            WKViewLockFocus(view); {
+                WKViewDisplayRect(view, draw);
+            } WKViewUnlockFocus(view);
+        }
+    } CGContextRestoreGState(context_);
 }
 
 - (WebView *) _webView {
@@ -222,17 +245,7 @@ static WBMarkup *SharedMarkup_;
 
     [[view_ mainFrame] forceLayoutAdjustingViewSize:YES];
 
-    [text_ setScrollXOffset:origin_.x scrollYOffset:origin_.y];
-
-    WKView *view([view_ _viewRef]);
-
-    CGContextSaveGState(context_); {
-        CGContextTranslateCTM(context_, rect.origin.x, rect.origin.y);
-
-        WKViewLockFocus(view); {
-            WKViewDisplayRect(view, CGRectMake(0, 0, rect.origin.x, rect.origin.y));
-        } WKViewUnlockFocus(view);
-    } CGContextRestoreGState(context_);
+    [self drawRect:rect];
 }
 
 - (void) drawString:(NSString *)string atPoint:(CGPoint)point withStyle:(NSString *)style {
@@ -254,17 +267,7 @@ static WBMarkup *SharedMarkup_;
     [self _setupWithStyle:style width:CGRectGetWidth(rect) height:CGRectGetHeight(rect)];
     [frame forceLayoutAdjustingViewSize:YES];
 
-    [text_ setScrollXOffset:origin_.x scrollYOffset:origin_.y];
-
-    WKView *view([view_ _viewRef]);
-
-    CGContextSaveGState(context_); {
-        CGContextTranslateCTM(context_, rect.origin.x, rect.origin.y);
-
-        WKViewLockFocus(view); {
-            WKViewDisplayRect(view, CGRectMake(0, 0, rect.size.width, rect.size.height));
-        } WKViewUnlockFocus(view);
-    } CGContextRestoreGState(context_);
+    [self drawRect:rect];
 }
 
 @end
