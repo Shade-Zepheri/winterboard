@@ -376,6 +376,8 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
         [names addObject:[NSString stringWithFormat:@"Bundles/com.apple.MobileSMS/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.calculator"])
         [names addObject:[NSString stringWithFormat:@"Files/Applications/Calculator.app/%@", file]];
+    else if ([identifier isEqualToString:@"com.apple.Maps"] && [file isEqualToString:@"Icon-57@2x.png"])
+        [names addObject:[NSString stringWithFormat:@"Bundles/com.apple.Maps/icon.png"]];
     else if (!summer);
         remapResourceName(@"FSO_BG.png", @"StatusBar")
         remapResourceName(Four_ ? @"SBDockBG-old.png" : @"SBDockBG.png", @"Dock")
