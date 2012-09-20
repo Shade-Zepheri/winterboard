@@ -1998,23 +1998,24 @@ static void NSString$drawAtPoint$withStyle$(NSString *self, SEL _cmd, CGPoint po
     WKSetCurrentGraphicsContext(UIGraphicsGetCurrentContext());
     if (style == nil || [style length] == 0)
         style = @"font-family: Helvetica; font-size: 12px";
-    //NSLog(@"XXX:drawP(%@)", [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
-    return [[WBMarkup sharedMarkup] drawString:self atPoint:point withStyle:style];
+    //NSLog(@"XXX:drawP(%@ | %@)", self, [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+    [[WBMarkup sharedMarkup] drawString:self atPoint:point withStyle:style];
 }
 
 static void NSString$drawInRect$withStyle$(NSString *self, SEL _cmd, CGRect rect, NSString *style) {
     WKSetCurrentGraphicsContext(UIGraphicsGetCurrentContext());
     if (style == nil || [style length] == 0)
         style = @"font-family: Helvetica; font-size: 12px";
-    //NSLog(@"XXX:drawR(%@)", [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+    //NSLog(@"XXX:drawR(%@ | %@)", self, [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
     return [[WBMarkup sharedMarkup] drawString:self inRect:rect withStyle:style];
 }
 
 static CGSize NSString$sizeWithStyle$forWidth$(NSString *self, SEL _cmd, NSString *style, float width) {
     if (style == nil || [style length] == 0)
         style = @"font-family: Helvetica; font-size: 12px";
-    //NSLog(@"XXX:size(%@)", [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
-    return [[WBMarkup sharedMarkup] sizeOfString:self withStyle:style forWidth:width];
+    CGSize size([[WBMarkup sharedMarkup] sizeOfString:self withStyle:style forWidth:width]);
+    //NSLog(@"XXX:size(%@ | %@) = [%g %g]", self, [style stringByReplacingOccurrencesOfString:@"\n" withString:@" "], size.width, size.height);
+    return size;
 }
 
 static void SBInitialize() {
