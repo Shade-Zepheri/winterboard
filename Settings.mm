@@ -508,8 +508,8 @@ static NSString *_plist;
     system("rm -rf /User/Library/Caches/com.apple.newsstand");
     system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
 
-    system("killall lsd SpringBoard backboardd");
-    system("killall -9 lsd SpringBoard backboardd");
+    system("killall -9 lsd");
+    system("killall SpringBoard backboardd");
 }
 
 - (void) cancelChanges {
