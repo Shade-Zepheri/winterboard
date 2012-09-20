@@ -2141,6 +2141,25 @@ static void SBInitialize() {
         English_ = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SpringBoard.app/English.lproj/LocalizedApplicationNames.strings"];
 }
 
+/*MSHook(int, open, const char *path, int oflag, mode_t mode) {
+    int fd(_open(path, oflag, mode));
+
+    static bool no(false);
+    if (no) return fd;
+    no = true;
+
+    if (strstr(path, "/icon") != NULL)
+        MSHookProcess(-1, "");
+
+    if (fd == -1 && errno == EFAULT)
+        NSLog(@"open(%p, %#x, %#o) = %d\n", path, oflag, mode, fd);
+    else
+        NSLog(@"open(\"%s\", %#x, %#o) = %d\n", path, oflag, mode, fd);
+
+    no = false;
+    return fd;
+}*/
+
 MSInitialize {
     $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
     $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
@@ -2291,6 +2310,8 @@ MSInitialize {
         MSHookFunction(_UIImageWithNameInDomain, &$_UIImageWithNameInDomain, &__UIImageWithNameInDomain);
     }
     // }}}
+
+    //MSHookFunction(reinterpret_cast<int (*)(const char *, int, mode_t)>(&open), MSHake(open));
 
     if (UIDebug_ && ![Manager_ fileExistsAtPath:@"/tmp/UIImages"]) {
         NSError *error(nil);
