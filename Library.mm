@@ -123,7 +123,9 @@ MSClassHook(NSString)
 
 MSClassHook(UIImage)
 MSMetaClassHook(UIImage)
+MSClassHook(UIImageTableArtwork)
 MSClassHook(UINavigationBar)
+MSClassHook(UISharedArtwork)
 MSClassHook(UIToolbar)
 MSClassHook(UIStatusBarTimeItemView)
 MSClassHook(UIWebDocumentView)
@@ -1878,6 +1880,38 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 }
 // }}}
 
+MSInstanceMessage2(UISharedArtwork *, UISharedArtwork, initWithName,inBundle, NSString *, name, NSBundle *, bundle) {
+    if ((self = MSOldCall(name, bundle)) != nil) {
+        $objc_setAssociatedObject(self, @selector(wb$bundle), bundle, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } return self;
+}
+
+MSInstanceMessage1(UIImage *, UIImageTableArtwork, imageNamed, NSString *, name) {
+    NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
+    if (Debug_)
+        NSLog(@"WB:Debug:[UIImageTableArtwork[%@] imageNamed:\"%@\"]", bundle, name);
+    if (bundle == nil)
+        return MSOldCall(name);
+    UIImage *image = [UIImages_ objectForKey:name];
+    if (image != nil)
+        return reinterpret_cast<id>(image) == [NSNull null] ? MSOldCall(name) : image;
+    if (NSString *path = $pathForFile$inBundle$(name, bundle, true))
+        image = $getImage$(path);
+    [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:name];
+    if (image != nil)
+        return image;
+
+    image = MSOldCall(name);
+
+    if (UIDebug_) {
+        NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
+        if (![Manager_ fileExistsAtPath:path])
+            [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
+    }
+
+    return image;
+}
+
 // %hook _UIImageWithName() {{{
 MSHook(UIImage *, _UIImageWithName, NSString *name) {
     if (Debug_)
@@ -2290,24 +2324,29 @@ MSInitialize {
         class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
         class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
 
-        struct nlist nl[6];
-        memset(nl, 0, sizeof(nl));
-        nl[0].n_un.n_name = (char *) "__UIApplicationImageWithName";
-        nl[1].n_un.n_name = (char *) "__UIImageWithNameInDomain";
-        nl[2].n_un.n_name = (char *) "__UIKitBundle";
-        nl[3].n_un.n_name = (char *) "__UIPackedImageTableGetIdentifierForName";
-        nl[4].n_un.n_name = (char *) "__UISharedImageNameGetIdentifier";
-        nlist(UIKit, nl);
+        if (kCFCoreFoundationVersionNumber > 700) { // XXX: iOS 6.x
+            WBRename(UISharedArtwork, initWithName:inBundle:, initWithName$inBundle$);
+            WBRename(UIImageTableArtwork, imageNamed:, imageNamed$);
+        } else {
+            struct nlist nl[6];
+            memset(nl, 0, sizeof(nl));
+            nl[0].n_un.n_name = (char *) "__UIApplicationImageWithName";
+            nl[1].n_un.n_name = (char *) "__UIImageWithNameInDomain";
+            nl[2].n_un.n_name = (char *) "__UIKitBundle";
+            nl[3].n_un.n_name = (char *) "__UIPackedImageTableGetIdentifierForName";
+            nl[4].n_un.n_name = (char *) "__UISharedImageNameGetIdentifier";
+            nlist(UIKit, nl);
 
-        nlset(_UIApplicationImageWithName, nl, 0);
-        nlset(_UIImageWithNameInDomain, nl, 1);
-        nlset(_UIKitBundle, nl, 2);
-        nlset(_UIPackedImageTableGetIdentifierForName, nl, 3);
-        nlset(_UISharedImageNameGetIdentifier, nl, 4);
+            nlset(_UIApplicationImageWithName, nl, 0);
+            nlset(_UIImageWithNameInDomain, nl, 1);
+            nlset(_UIKitBundle, nl, 2);
+            nlset(_UIPackedImageTableGetIdentifierForName, nl, 3);
+            nlset(_UISharedImageNameGetIdentifier, nl, 4);
 
-        MSHookFunction(_UIApplicationImageWithName, &$_UIApplicationImageWithName, &__UIApplicationImageWithName);
-        MSHookFunction(_UIImageWithName, &$_UIImageWithName, &__UIImageWithName);
-        MSHookFunction(_UIImageWithNameInDomain, &$_UIImageWithNameInDomain, &__UIImageWithNameInDomain);
+            MSHookFunction(_UIApplicationImageWithName, &$_UIApplicationImageWithName, &__UIApplicationImageWithName);
+            MSHookFunction(_UIImageWithName, &$_UIImageWithName, &__UIImageWithName);
+            MSHookFunction(_UIImageWithNameInDomain, &$_UIImageWithNameInDomain, &__UIImageWithNameInDomain);
+        }
     }
     // }}}
 
