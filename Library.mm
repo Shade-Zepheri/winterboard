@@ -2279,7 +2279,10 @@ MSInitialize {
     }
     // }}}
     // ImageIO {{{
-    if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/ImageIO.framework/ImageIO")) {
+    MSImageRef imageio = MSGetImageByName("/System/Library/Frameworks/ImageIO.framework/ImageIO");
+    if (imageio == NULL)
+        imageio = MSGetImageByName("/System/Library/PrivateFrameworks/ImageIO.framework/ImageIO");
+    if (MSImageRef image = imageio) {
         void *(*CGImageReadCreateWithFile)(NSString *, int);
         msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
         MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
