@@ -49,7 +49,7 @@ package: all
 	find winterboard -name .svn | while read -r line; do rm -rf "$${line}"; done
 	cp -a extrainst_ preinst prerm winterboard/DEBIAN
 	sed -e 's/VERSION/$(shell ./version.sh)/g' control >winterboard/DEBIAN/control
-	cp -a Test.sh Icon-Small.png icon.png icon-72.png icon@2x.png WinterBoard.dylib WinterBoard Info.plist winterboard/Applications/WinterBoard.app
+	cp -a Test.sh Default-568h@2x.png Icon-Small.png icon.png icon-72.png icon@2x.png WinterBoard.dylib WinterBoard Info.plist winterboard/Applications/WinterBoard.app
 	file="winterboard_$$(grep ^Version: winterboard/DEBIAN/control | cut -d ' ' -f 2)_iphoneos-arm.deb"; echo "$$file"; ln -sf "$$file" winterboard.deb
 	dpkg-deb -b winterboard winterboard.deb
 
