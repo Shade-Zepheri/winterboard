@@ -2068,6 +2068,12 @@ MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, NSDictionary **n
     } return images;
 }
 
+MSHook(void, BKSDisplayServicesSetSystemAppExitedImagePath, NSString *path) {
+    if (NSString *themed = $getTheme$($useScale$([NSArray arrayWithObject:@"SystemAppExited.png"])))
+        path = themed;
+    _BKSDisplayServicesSetSystemAppExitedImagePath(path);
+}
+
 #define WBRename(name, sel, imp) \
     MSHookMessage($ ## name, @selector(sel), &$ ## name ## $ ## imp, &_ ## name ## $ ## imp)
 
@@ -2307,6 +2313,13 @@ MSInitialize {
     if (MSImageRef image = MSGetImageByName(AudioToolbox)) {
         msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
         MSHookFunction(_Z24GetFileNameForThisActionmPcRb, &$_Z24GetFileNameForThisActionmPcRb, &__Z24GetFileNameForThisActionmPcRb);
+    }
+    // }}}
+    // BackBoardServices {{{
+    if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/BackBoardServices.framework/BackBoardServices")) {
+        void (*BKSDisplayServicesSetSystemAppExitedImagePath)(NSString *path);
+        msset(BKSDisplayServicesSetSystemAppExitedImagePath, image, "_BKSDisplayServicesSetSystemAppExitedImagePath");
+        MSHookFunction(BKSDisplayServicesSetSystemAppExitedImagePath, MSHake(BKSDisplayServicesSetSystemAppExitedImagePath));
     }
     // }}}
     // GraphicsServices {{{
