@@ -350,7 +350,7 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool ui) {
+static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool ui, bool use) {
     NSString *identifier = [bundle bundleIdentifier];
     NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
 
@@ -387,7 +387,7 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
 
     [names addObject:[NSString stringWithFormat:@"Fallback/%@", file]];
 
-    if (NSString *path = $getTheme$($useScale$(names, ui)))
+    if (NSString *path = $getTheme$($useScale$(names, use)))
         return path;
 
     return nil;
@@ -490,7 +490,7 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
         if ([file hasPrefix:prefix]) {
             NSUInteger length([prefix length]);
             if (length != [file length])
-                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false))
+                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false, false))
                     return path;
         }
     }
@@ -671,7 +671,7 @@ MSHook(UIImage *, _UIApplicationImageWithName, NSString *name) {
     NSBundle *bundle = [NSBundle mainBundle];
     if (Debug_)
         NSLog(@"WB:Debug: _UIApplicationImageWithName(\"%@\", %@)", name, bundle);
-    if (NSString *path = $pathForFile$inBundle$(name, bundle, false))
+    if (NSString *path = $pathForFile$inBundle$(name, bundle, false, false))
         return CachedImageAtPath(path);
     return __UIApplicationImageWithName(name);
 }
@@ -699,7 +699,7 @@ MSInstanceMessageHook2(NSString *, NSBundle, pathForResource,ofType, NSString *,
     NSString *file = type == nil ? resource : [NSString stringWithFormat:@"%@.%@", resource, type];
     if (Debug_)
         NSLog(@"WB:Debug: [NSBundle(%@) pathForResource:\"%@\"]", [self bundleIdentifier], file);
-    if (NSString *path = $pathForFile$inBundle$(file, self, false))
+    if (NSString *path = $pathForFile$inBundle$(file, self, false, false))
         return path;
     return MSOldCall(resource, type);
 }
@@ -1693,7 +1693,7 @@ MSInstanceMessageHook3(NSString *, NSBundle, localizedStringForKey,value,table, 
                 return value;
     } else if (NSString *path = $pathForFile$inBundle$([NSString stringWithFormat:@"%@.lproj/%@.strings",
         language, file
-    ], self, false)) {
+    ], self, false, false)) {
         if ((strings = [[NSDictionary alloc] initWithContentsOfFile:path]) != nil) {
             [Strings_ setObject:[strings autorelease] forKey:name];
             goto strings;
@@ -1895,7 +1895,7 @@ MSInstanceMessage1(UIImage *, UIImageTableArtwork, imageNamed, NSString *, name)
     UIImage *image = [UIImages_ objectForKey:name];
     if (image != nil)
         return reinterpret_cast<id>(image) == [NSNull null] ? MSOldCall(name) : image;
-    if (NSString *path = $pathForFile$inBundle$(name, bundle, true))
+    if (NSString *path = $pathForFile$inBundle$(name, bundle, true, true))
         image = $getImage$(path);
     [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:name];
     if (image != nil)
@@ -1942,7 +1942,7 @@ MSHook(UIImage *, _UIImageWithName, NSString *name) {
         UIImage *image([UIImages_ objectForKey:key]);
         if (image != nil)
             return reinterpret_cast<id>(image) == [NSNull null] ? __UIImageWithName(name) : image;
-        if (NSString *path = $pathForFile$inBundle$(name, _UIKitBundle(), true))
+        if (NSString *path = $pathForFile$inBundle$(name, _UIKitBundle(), true, true))
             image = $getImage$(path);
         [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:key];
         if (image != nil)
@@ -2037,6 +2037,35 @@ static void ChangeWallpaper(
     if (WallpaperPage_ != nil)
         [WallpaperPage_ loadRequest:[NSURLRequest requestWithURL:WallpaperURL_]];
 
+}
+
+MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, NSDictionary **names, void *arg2, void *arg3) {
+    NSArray *images(_CPBitmapCreateImagesFromPath(path, names, arg2, arg3));
+    if (images != NULL && *names != nil && CFGetTypeID((CFTypeRef) *names) == CFDictionaryGetTypeID()) {
+        if (NSBundle *bundle = [NSBundle wb$bundleWithFile:path]) {
+            NSMutableArray *copy([images mutableCopy]);
+            [images release];
+            images = copy;
+
+            NSString *file([path stringByResolvingSymlinksInPath]);
+            NSString *prefix([[bundle bundlePath] stringByResolvingSymlinksInPath]);
+            if ([file hasPrefix:prefix]) {
+                NSUInteger length([prefix length]);
+                if (length != [file length]) {
+                    NSEnumerator *enumerator([*names keyEnumerator]);
+                    while (NSString *name = [enumerator nextObject]) {
+                        NSString *png([name stringByAppendingString:@".png"]);
+                        if (NSString *themed = $pathForFile$inBundle$(png, bundle, false, true)) {
+                            NSUInteger index([[*names objectForKey:name] intValue]);
+                            UIImage *image($getImage$(themed));
+                            CGImageRef cg([image CGImage]);
+                            [copy replaceObjectAtIndex:index withObject:(id)cg];
+                        }
+                    }
+                }
+            }
+        }
+    } return images;
 }
 
 #define WBRename(name, sel, imp) \
@@ -2267,6 +2296,13 @@ MSInitialize {
                     [Info_ setObject:[info objectForKey:key] forKey:key];
     // }}}
 
+    // AppSupport {{{
+    if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/AppSupport.framework/AppSupport")) {
+        NSArray *(*CPBitmapCreateImagesFromPath)(NSString *, NSDictionary **, void *, void *);
+        msset(CPBitmapCreateImagesFromPath, image, "_CPBitmapCreateImagesFromPath");
+        MSHookFunction(CPBitmapCreateImagesFromPath, MSHake(CPBitmapCreateImagesFromPath));
+    }
+    // }}}
     // AudioToolbox {{{
     if (MSImageRef image = MSGetImageByName(AudioToolbox)) {
         msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
