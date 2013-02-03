@@ -509,7 +509,11 @@ static NSString *_plist;
     system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
 
     system("killall -9 lsd");
-    system("killall SpringBoard backboardd");
+
+    if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
+        system("killall backboardd");
+    else
+        system("killall SpringBoard");
 }
 
 - (void) cancelChanges {
