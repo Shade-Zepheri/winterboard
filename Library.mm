@@ -1990,14 +1990,9 @@ MSHook(GSFontRef, GSFontCreateWithName, const char *name, GSFontSymbolicTraits t
 #define AudioToolbox "/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox"
 #define UIKit "/System/Library/Frameworks/UIKit.framework/UIKit"
 
-bool (*_Z24GetFileNameForThisActionmPcRb)(unsigned long a0, char *a1, bool &a2);
-
-MSHook(bool, _Z24GetFileNameForThisActionmPcRb, unsigned long a0, char *a1, bool &a2) {
+static bool GetFileNameForThisAction$(bool value, unsigned long a0, char *a1, unsigned long a2, bool &a3) {
     if (Debug_)
-        NSLog(@"WB:Debug:GetFileNameForThisAction(%u, %p, %u)", a0, a1, a2);
-    bool value = __Z24GetFileNameForThisActionmPcRb(a0, a1, a2);
-    if (Debug_)
-        NSLog(@"WB:Debug:GetFileNameForThisAction(%u, %s, %u) = %u", a0, value ? a1 : NULL, a2, value);
+        NSLog(@"WB:Debug:GetFileNameForThisAction(%u, %s, %u, %u) = %u", a0, value ? a1 : NULL, a2, a3, value);
 
     if (value) {
         NSString *path = [NSString stringWithUTF8String:a1];
@@ -2013,6 +2008,16 @@ MSHook(bool, _Z24GetFileNameForThisActionmPcRb, unsigned long a0, char *a1, bool
         }
     }
     return value;
+}
+
+MSHook(bool, _Z24GetFileNameForThisActionmPcRb, unsigned long a0, char *a1, bool &a3) {
+    bool value(__Z24GetFileNameForThisActionmPcRb(a0, a1, a3));
+    return GetFileNameForThisAction$(value, a0, a1, 0, a3);
+}
+
+MSHook(bool, _Z24GetFileNameForThisActionmPcmRb, unsigned long a0, char *a1, unsigned long a2, bool &a3) {
+    bool value(__Z24GetFileNameForThisActionmPcmRb(a0, a1, a2, a3));
+    return GetFileNameForThisAction$(value, a0, a1, a2, a3);
 }
 
 static void ChangeWallpaper(
@@ -2311,8 +2316,13 @@ MSInitialize {
     // }}}
     // AudioToolbox {{{
     if (MSImageRef image = MSGetImageByName(AudioToolbox)) {
+        bool (*_Z24GetFileNameForThisActionmPcRb)(unsigned long, char *, bool &);
         msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
         MSHookFunction(_Z24GetFileNameForThisActionmPcRb, &$_Z24GetFileNameForThisActionmPcRb, &__Z24GetFileNameForThisActionmPcRb);
+
+        bool (*_Z24GetFileNameForThisActionmPcmRb)(unsigned long, char *, unsigned long, bool &);
+        msset(_Z24GetFileNameForThisActionmPcmRb, image, "__Z24GetFileNameForThisActionmPcmRb");
+        MSHookFunction(_Z24GetFileNameForThisActionmPcmRb, &$_Z24GetFileNameForThisActionmPcmRb, &__Z24GetFileNameForThisActionmPcmRb);
     }
     // }}}
     // BackBoardServices {{{
