@@ -1314,7 +1314,21 @@ MSHook(void, SBAwayView$updateDesktopImage$, SBAwayView *self, SEL sel, UIImage 
         [view setBackgroundColor:[UIColor clearColor]];
 
         [self insertSubview:view aboveSubview:_backgroundView];
+
+        if ($objc_setAssociatedObject != NULL)
+            $objc_setAssociatedObject(self, @selector(wb$widgetView), view, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
+}
+
+MSHook(void, SBAwayView$_addSubview$positioned$relativeTo$, SBAwayView *self, SEL sel, UIView *view, int positioned, UIView *relative) {
+    UIView *&_backgroundView(MSHookIvar<UIView *>(self, "_backgroundView"));
+    UIView *&_chargingView(MSHookIvar<UIView *>(self, "_chargingView"));
+    if (&_chargingView != NULL)
+        if (positioned == -2 && (relative == _backgroundView && _chargingView == nil || relative == _chargingView))
+            if ($objc_getAssociatedObject != NULL)
+                if (UIView *widget = $objc_getAssociatedObject(self, @selector(wb$widgetView)))
+                    relative = widget;
+    return _SBAwayView$_addSubview$positioned$relativeTo$(self, sel, view, positioned, relative);
 }
 
 /*extern "C" CGColorRef CGGStateGetSystemColor(void *);
@@ -2202,6 +2216,9 @@ static void SBInitialize() {
     //WBRename(SBImageCache, initWithName:forImageWidth:imageHeight:initialCapacity:, initWithName$forImageWidth$imageHeight$initialCapacity$);
 
     WBRename(SBAwayView, updateDesktopImage:, updateDesktopImage$);
+    if (kCFCoreFoundationVersionNumber >= 700)
+        WBRename(SBAwayView, _addSubview:positioned:relativeTo:, _addSubview$positioned$relativeTo$);
+
     WBRename(SBStatusBarContentsView, didMoveToSuperview, didMoveToSuperview);
     //WBRename(SBStatusBarContentsView, initWithStatusBar:mode:, initWithStatusBar$mode$);
     //WBRename(SBStatusBarController, setStatusBarMode:orientation:duration:animation:, setStatusBarMode$orientation$duration$animation$);
