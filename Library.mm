@@ -2359,9 +2359,13 @@ MSInitialize {
     if (imageio == NULL)
         imageio = MSGetImageByName("/System/Library/PrivateFrameworks/ImageIO.framework/ImageIO");
     if (MSImageRef image = imageio) {
-        void *(*CGImageReadCreateWithFile)(NSString *, int);
-        msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
-        MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
+        void *(*CGImageReadCreateWithFile)(NSString *, int) = NULL;
+        if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
+            CGImageReadCreateWithFile = NULL;
+        else {
+            msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
+            MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
+        }
 
         if (CGImageReadCreateWithFile == NULL) {
             void *(*CGImageSourceCreateWithFile)(NSString *, NSDictionary *);
