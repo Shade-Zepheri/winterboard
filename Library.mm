@@ -1894,28 +1894,28 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 }
 // }}}
 
-MSInstanceMessage2(UISharedArtwork *, UISharedArtwork, initWithName,inBundle, NSString *, name, NSBundle *, bundle) {
+MSInstanceMessage2(UIImageTableArtwork *, UIImageTableArtwork, initWithName,inBundle, NSString *, name, NSBundle *, bundle) {
     if ((self = MSOldCall(name, bundle)) != nil) {
         $objc_setAssociatedObject(self, @selector(wb$bundle), bundle, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     } return self;
 }
 
-MSInstanceMessage1(UIImage *, UIImageTableArtwork, imageNamed, NSString *, name) {
+MSInstanceMessage2(UIImage *, UIImageTableArtwork, imageNamed,device, NSString *, name, int, device) {
     NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
     if (Debug_)
-        NSLog(@"WB:Debug:[UIImageTableArtwork[%@] imageNamed:\"%@\"]", bundle, name);
+        NSLog(@"WB:Debug:[UIImageTableArtwork[%@] imageNamed:\"%@\" device:%i]", bundle, name, device);
     if (bundle == nil)
-        return MSOldCall(name);
+        return MSOldCall(name, device);
     UIImage *image = [UIImages_ objectForKey:name];
     if (image != nil)
-        return reinterpret_cast<id>(image) == [NSNull null] ? MSOldCall(name) : image;
+        return reinterpret_cast<id>(image) == [NSNull null] ? MSOldCall(name, device) : image;
     if (NSString *path = $pathForFile$inBundle$(name, bundle, true, true))
         image = $getImage$(path);
     [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:name];
     if (image != nil)
         return image;
 
-    image = MSOldCall(name);
+    image = MSOldCall(name, device);
 
     if (UIDebug_) {
         NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
@@ -2408,8 +2408,8 @@ MSInitialize {
         class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
 
         if (kCFCoreFoundationVersionNumber > 700) { // XXX: iOS 6.x
-            WBRename(UISharedArtwork, initWithName:inBundle:, initWithName$inBundle$);
-            WBRename(UIImageTableArtwork, imageNamed:, imageNamed$);
+            WBRename(UIImageTableArtwork, initWithName:inBundle:, initWithName$inBundle$);
+            WBRename(UIImageTableArtwork, imageNamed:device:, imageNamed$device$);
         } else {
             struct nlist nl[6];
             memset(nl, 0, sizeof(nl));
