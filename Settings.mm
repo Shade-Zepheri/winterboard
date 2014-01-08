@@ -31,6 +31,7 @@
 #include <dlfcn.h>
 #include <objc/runtime.h>
 
+static void *libhide;
 static BOOL (*IsIconHiddenDisplayId)(NSString *);
 static BOOL (*HideIconViaDisplayId)(NSString *);
 static BOOL (*UnHideIconViaDisplayId)(NSString *);
@@ -423,7 +424,7 @@ static NSString *_plist;
 @implementation WBSettingsController
 
 + (void) load {
-    void *libhide(dlopen("/usr/lib/hide.dylib", RTLD_LAZY));
+    libhide = dlopen("/usr/lib/hide.dylib", RTLD_LAZY);
     IsIconHiddenDisplayId = reinterpret_cast<BOOL (*)(NSString *)>(dlsym(libhide, "IsIconHiddenDisplayId"));
     HideIconViaDisplayId = reinterpret_cast<BOOL (*)(NSString *)>(dlsym(libhide, "HideIconViaDisplayId"));
     UnHideIconViaDisplayId = reinterpret_cast<BOOL (*)(NSString *)>(dlsym(libhide, "UnHideIconViaDisplayId"));
@@ -446,7 +447,8 @@ static NSString *_plist;
     if ([_settings objectForKey:@"SummerBoard"] == nil)
         [_settings setObject:[NSNumber numberWithBool:set] forKey:@"SummerBoard"];
 
-    [_settings setObject:[NSNumber numberWithBool:IsIconHiddenDisplayId(WinterBoardDisplayID)] forKey:@"IconHidden"];
+    if (libhide != NULL)
+        [_settings setObject:[NSNumber numberWithBool:IsIconHiddenDisplayId(WinterBoardDisplayID)] forKey:@"IconHidden"];
 }
 
 - (id) initForContentSize:(CGSize)size {
@@ -471,7 +473,8 @@ static NSString *_plist;
     if (![data writeToFile:_plist options:NSAtomicWrite error:NULL])
         return;
 
-    ([[_settings objectForKey:@"IconHidden"] boolValue] ? HideIconViaDisplayId : UnHideIconViaDisplayId)(WinterBoardDisplayID);
+    if (libhide != NULL)
+        ([[_settings objectForKey:@"IconHidden"] boolValue] ? HideIconViaDisplayId : UnHideIconViaDisplayId)(WinterBoardDisplayID);
 
     unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons");
     unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons.plist");
