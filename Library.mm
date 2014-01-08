@@ -2368,7 +2368,7 @@ MSInitialize {
 
         CFNotificationCenterAddObserver(
             CFNotificationCenterGetDarwinNotifyCenter(),
-            NULL, &ChangeWallpaper, (CFStringRef) @"com.saurik.winterboard.lockbackground", NULL, 0
+            NULL, &ChangeWallpaper, (CFStringRef) @"com.saurik.winterboard.lockbackground", NULL, CFNotificationSuspensionBehaviorCoalesce
         );
 
         if ($getTheme$([NSArray arrayWithObject:@"Wallpaper.mp4"]) != nil) {
