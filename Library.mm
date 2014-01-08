@@ -1889,6 +1889,8 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 
 template <typename Original_>
 static UIImage *WBCacheUIImage(const Original_ &original, NSString *name, NSString *key) {
+    if ([name rangeOfString:@"."].location == NSNotFound)
+        name = [name stringByAppendingString:@".png"];
     UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true, true); }, key));
     if (image != nil && UIDebug_) {
         NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
