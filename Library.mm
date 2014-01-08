@@ -331,7 +331,7 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
         for (NSString *file in files) {
             path = [NSString stringWithFormat:@"%@/%@", theme, file];
             if ([Manager_ fileExistsAtPath:path]) {
-                if ([[Manager_ pathContentOfSymbolicLinkAtPath:path] isEqualToString:@"/"])
+                if ([[Manager_ destinationOfSymbolicLinkAtPath:path error:NULL] isEqualToString:@"/"])
                     path = nil;
                 goto set;
             }
@@ -1974,7 +1974,7 @@ MSHook(UIImage *, _UIImageWithName, NSString *name) {
 // }}}
 // %hook _UIImageWithNameInDomain() {{{
 MSHook(UIImage *, _UIImageWithNameInDomain, NSString *name, NSString *domain) {
-    NSString *key([NSString stringWithFormat:@"D:%zu%@%@", [domain length], domain, name]);
+    NSString *key([NSString stringWithFormat:@"D:%zu%@%@", size_t([domain length]), domain, name]);
     UIImage *image([PathImages_ objectForKey:key]);
     if (image != nil)
         return reinterpret_cast<id>(image) == [NSNull null] ? __UIImageWithNameInDomain(name, domain) : image;
@@ -2000,11 +2000,10 @@ MSHook(GSFontRef, GSFontCreateWithName, const char *name, GSFontSymbolicTraits t
 // }}}
 
 #define AudioToolbox "/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox"
-#define UIKit "/System/Library/Frameworks/UIKit.framework/UIKit"
 
 static bool GetFileNameForThisAction$(bool value, unsigned long a0, char *a1, unsigned long a2, bool &a3) {
     if (Debug_)
-        NSLog(@"WB:Debug:GetFileNameForThisAction(%u, %s, %u, %u) = %u", a0, value ? a1 : NULL, a2, a3, value);
+        NSLog(@"WB:Debug:GetFileNameForThisAction(%lu, %s, %lu, %u) = %u", a0, value ? a1 : NULL, a2, a3, value);
 
     if (value) {
         NSString *path = [NSString stringWithUTF8String:a1];
@@ -2098,6 +2097,9 @@ template <typename Type_>
 static void msset(Type_ &function, MSImageRef image, const char *name) {
     function = reinterpret_cast<Type_>(MSFindSymbol(image, name));
 }
+
+#define WBHookSymbol(image, function) \
+    msset(function, image, "_" #function)
 
 template <typename Type_>
 static void nlset(Type_ &function, struct nlist *nl, size_t index) {
@@ -2294,10 +2296,8 @@ MSInitialize {
                 if (name == nil)
                     continue;
 
-                NSString *theme(nil);
-
                 #define testForTheme(format...) \
-                    if (theme == nil) { \
+                    { \
                         NSString *path = [NSString stringWithFormat:format]; \
                         if ([Manager_ fileExistsAtPath:path]) { \
                             [Themes_ addObject:path]; \
@@ -2400,7 +2400,7 @@ MSInitialize {
     }
     // }}}
     // UIKit {{{
-    if ([NSBundle bundleWithIdentifier:@"com.apple.UIKit"] != nil) {
+    if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/UIKit.framework/UIKit")) {
         class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v20@0:4{CGPoint=ff}8@16");
         class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
         class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
@@ -2409,20 +2409,11 @@ MSInitialize {
             WBRename(UIImageTableArtwork, initWithName:inBundle:, initWithName$inBundle$);
             WBRename(UIImageTableArtwork, imageNamed:device:, imageNamed$device$);
         } else {
-            struct nlist nl[6];
-            memset(nl, 0, sizeof(nl));
-            nl[0].n_un.n_name = (char *) "__UIApplicationImageWithName";
-            nl[1].n_un.n_name = (char *) "__UIImageWithNameInDomain";
-            nl[2].n_un.n_name = (char *) "__UIKitBundle";
-            nl[3].n_un.n_name = (char *) "__UIPackedImageTableGetIdentifierForName";
-            nl[4].n_un.n_name = (char *) "__UISharedImageNameGetIdentifier";
-            nlist(UIKit, nl);
-
-            nlset(_UIApplicationImageWithName, nl, 0);
-            nlset(_UIImageWithNameInDomain, nl, 1);
-            nlset(_UIKitBundle, nl, 2);
-            nlset(_UIPackedImageTableGetIdentifierForName, nl, 3);
-            nlset(_UISharedImageNameGetIdentifier, nl, 4);
+            WBHookSymbol(image, _UIApplicationImageWithName);
+            WBHookSymbol(image, _UIImageWithNameInDomain);
+            WBHookSymbol(image, _UIKitBundle);
+            WBHookSymbol(image, _UIPackedImageTableGetIdentifierForName);
+            WBHookSymbol(image, _UISharedImageNameGetIdentifier);
 
             MSHookFunction(_UIApplicationImageWithName, &$_UIApplicationImageWithName, &__UIApplicationImageWithName);
             MSHookFunction(_UIImageWithName, &$_UIImageWithName, &__UIImageWithName);

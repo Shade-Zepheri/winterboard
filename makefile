@@ -1,10 +1,6 @@
-ifndef PKG_TARG
-target :=
-else
-target := $(PKG_TARG)-
-endif
+cycc = cycc -i2.0 -o$@ -- -Iiphone-api
 
-substrate := -I../mobilesubstrate -L../mobilesubstrate -lsubstrate
+substrate := -I../substrate -L../substrate -lsubstrate
 
 all: WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
 
@@ -12,20 +8,16 @@ clean:
 	rm -f WinterBoard WinterBoard.dylib
 
 WinterBoardSettings: Settings.mm makefile
-	$(target)g++ -dynamiclib -g0 -O2 -Wall -o $@ $(filter %.mm,$^) -framework UIKit -framework CoreFoundation -framework Foundation -lobjc -framework CoreGraphics -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks
-	ldid -S $@
+	$(cycc) -dynamiclib -g0 -O2 $(filter %.mm,$^) -framework UIKit -framework CoreFoundation -framework Foundation -lobjc -framework CoreGraphics -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks
 
-WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../mobilesubstrate/substrate.h
-	$(target)g++ -dynamiclib -g0 -O2 -Wall -o $@ $(filter %.mm,$^) -framework CoreFoundation -framework Foundation -lobjc -I/apl/inc/iPhoneOS-2.0 -framework CoreGraphics -framework ImageIO -framework GraphicsServices -framework Celestial $(substrate) -framework UIKit -framework WebCore -framework WebKit -F$(PKG_ROOT)/System/Library/PrivateFrameworks
-	ldid -S $@
+WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../substrate/substrate.h
+	$(cycc) -dynamiclib -g0 -O2 $(filter %.mm,$^) -framework CoreFoundation -framework Foundation -lobjc -I/apl/inc/iPhoneOS-2.0 -framework CoreGraphics -framework ImageIO -framework GraphicsServices -framework Celestial $(substrate) -framework UIKit -framework WebCore -framework WebKit -F$(PKG_ROOT)/System/Library/PrivateFrameworks
 
 WinterBoard: Application.mm makefile
-	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc -framework CoreGraphics -I/apl/sdk -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks $(substrate)
-	ldid -S $@
+	$(cycc) -g0 -O2 -Werror $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc -framework CoreGraphics -I/apl/sdk -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks $(substrate)
 
 Optimize: Optimize.cpp makefile
-	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^)
-	ldid -S $@
+	$(cycc) -g0 -O2 -Werror $(filter %.cpp,$^)
 
 package: all
 	rm -rf winterboard

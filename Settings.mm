@@ -51,7 +51,7 @@ static BOOL (*IsIconHiddenDisplayId)(NSString *);
 static BOOL (*HideIconViaDisplayId)(NSString *);
 static BOOL (*UnHideIconViaDisplayId)(NSString *);
 
-static const NSString *WinterBoardDisplayID = @"com.saurik.WinterBoard";
+static NSString *WinterBoardDisplayID = @"com.saurik.WinterBoard";
 
 extern NSString *PSTableCellKey;
 extern "C" UIImage *_UIImageWithName(NSString *);

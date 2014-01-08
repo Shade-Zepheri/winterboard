@@ -1,0 +1,3 @@
+[submodule "iphone-api"]
+	path = iphone-api
+	url = git://git.saurik.com/iphone-api.git

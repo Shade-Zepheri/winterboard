@@ -1,14 +1,15 @@
 #include "WBMarkup.h"
 
+#include <substrate.h>
+
 @class WKView;
 
-extern "C" {
-    void WebThreadLock();
-    CGContextRef WKGetCurrentGraphicsContext();
-    void WKViewLockFocus(WKView *);
-    void WKViewUnlockFocus(WKView *);
-    void WKViewDisplayRect(WKView *, CGRect);
-}
+extern "C" void WebThreadLock();
+extern "C" CGContextRef WKGetCurrentGraphicsContext();
+
+static void (*WKViewLockFocus$)(WKView *);
+static void (*WKViewUnlockFocus$)(WKView *);
+static void (*WKViewDisplayRect$)(WKView *, CGRect);
 
 @interface DOMElement : NSObject
 - (void) setInnerHTML:(NSString *)value;
@@ -64,6 +65,13 @@ static WBMarkup *SharedMarkup_;
 
 @implementation WBMarkup
 
++ (void) initialize {
+    MSImageRef WebCore(MSGetImageByName("/System/Library/PrivateFrameworks/WebCore.framework/WebCore"));
+    MSHookSymbol(WKViewLockFocus$, "WKViewLockFocus", WebCore);
+    MSHookSymbol(WKViewUnlockFocus$, "WKViewUnlockFocus", WebCore);
+    MSHookSymbol(WKViewDisplayRect$, "WKViewDisplayRect", WebCore);
+}
+
 + (BOOL) isSharedMarkupCreated {
     return SharedMarkup_ != nil;
 }
@@ -117,9 +125,9 @@ static WBMarkup *SharedMarkup_;
             [view_ _drawRect:draw context:context_ lockFocus:YES];
         else {
             WKView *view([view_ _viewRef]);
-            WKViewLockFocus(view); {
-                WKViewDisplayRect(view, draw);
-            } WKViewUnlockFocus(view);
+            WKViewLockFocus$(view); {
+                WKViewDisplayRect$(view, draw);
+            } WKViewUnlockFocus$(view);
         }
     } CGContextRestoreGState(context_);
 }
