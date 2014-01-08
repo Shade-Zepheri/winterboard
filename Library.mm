@@ -105,7 +105,6 @@ MSClassHook(NSString)
 
 MSClassHook(UIImage)
 MSMetaClassHook(UIImage)
-MSClassHook(UIImageTableArtwork)
 MSClassHook(UINavigationBar)
 MSClassHook(UISharedArtwork)
 MSClassHook(UIToolbar)
@@ -210,12 +209,13 @@ static bool SpringBoard_;
 
 static UIImage *(*_UIApplicationImageWithName)(NSString *name);
 static UIImage *(*_UIImageWithNameInDomain)(NSString *name, NSString *domain);
+static UIImage *(*_UIImageWithNameUsingCurrentIdiom)(NSString *name);
+static UIImage *(*_UIImageWithDeviceSpecificName)(NSString *name);
 static NSBundle *(*_UIKitBundle)();
 static bool (*_UIPackedImageTableGetIdentifierForName)(NSString *, int *);
 static int (*_UISharedImageNameGetIdentifier)(NSString *);
 
-static NSMutableDictionary *UIImages_ = [[NSMutableDictionary alloc] initWithCapacity:32];
-static NSMutableDictionary *PathImages_ = [[NSMutableDictionary alloc] initWithCapacity:16];
+static NSMutableDictionary *Images_ = [[NSMutableDictionary alloc] initWithCapacity:64];
 static NSMutableDictionary *Cache_ = [[NSMutableDictionary alloc] initWithCapacity:64];
 static NSMutableDictionary *Strings_ = [[NSMutableDictionary alloc] initWithCapacity:0];
 static NSMutableDictionary *Bundles_ = [[NSMutableDictionary alloc] initWithCapacity:2];
@@ -639,13 +639,13 @@ MSHook(NSString *, SBApplication$pathForIcon, SBApplication *self, SEL sel) {
 
 static UIImage *CachedImageAtPath(NSString *path) {
     path = [path stringByResolvingSymlinksInPath];
-    UIImage *image = [PathImages_ objectForKey:path];
+    UIImage *image = [Images_ objectForKey:path];
     if (image != nil)
         return reinterpret_cast<id>(image) == [NSNull null] ? nil : image;
     image = [[UIImage alloc] initWithContentsOfFile:path cache:true];
     if (image != nil)
         image = [image autorelease];
-    [PathImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:path];
+    [Images_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:path];
     return image;
 }
 
@@ -1063,6 +1063,17 @@ static UIImage *$getImage$(NSString *path) {
         [image setScale:scale];
 
     return image;
+}
+
+template <typename Original_, typename Modified_>
+_finline UIImage *WBCacheImage(const Original_ &original, const Modified_ &modified, NSString *key) {
+    UIImage *image([Images_ objectForKey:key]);
+    if (image != nil)
+        return reinterpret_cast<id>(image) == [NSNull null] ? original() : image;
+    if (NSString *path = modified())
+        image = $getImage$(path);
+    [Images_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:key];
+    return image == nil ? original() : image;
 }
 
 static UIImage *$getDefaultDesktopImage$() {
@@ -1876,98 +1887,53 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 }
 // }}}
 
-MSInstanceMessage2(UIImageTableArtwork *, UIImageTableArtwork, initWithName,inBundle, NSString *, name, NSBundle *, bundle) {
-    if ((self = MSOldCall(name, bundle)) != nil) {
-        $objc_setAssociatedObject(self, @selector(wb$bundle), bundle, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    } return self;
-}
-
-MSInstanceMessage2(UIImage *, UIImageTableArtwork, imageNamed,device, NSString *, name, int, device) {
-    NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
-    if (Debug_)
-        NSLog(@"WB:Debug:[UIImageTableArtwork[%@] imageNamed:\"%@\" device:%i]", bundle, name, device);
-    if (bundle == nil)
-        return MSOldCall(name, device);
-    UIImage *image = [UIImages_ objectForKey:name];
-    if (image != nil)
-        return reinterpret_cast<id>(image) == [NSNull null] ? MSOldCall(name, device) : image;
-    if (NSString *path = $pathForFile$inBundle$(name, bundle, true, true))
-        image = $getImage$(path);
-    [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:name];
-    if (image != nil)
-        return image;
-
-    image = MSOldCall(name, device);
-
-    if (UIDebug_) {
+template <typename Original_>
+static UIImage *WBCacheUIImage(const Original_ &original, NSString *name, NSString *key) {
+    UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true, true); }, key));
+    if (image != nil && UIDebug_) {
         NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
         if (![Manager_ fileExistsAtPath:path])
             [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
-    }
-
-    return image;
+    } return image;
 }
 
 // %hook _UIImageWithName() {{{
 MSHook(UIImage *, _UIImageWithName, NSString *name) {
-    if (Debug_)
-        NSLog(@"WB:Debug: _UIImageWithName(\"%@\")", name);
     if (name == nil)
         return nil;
-
-    int identifier;
-    bool packed;
-
-    if (_UIPackedImageTableGetIdentifierForName != NULL)
-        packed = _UIPackedImageTableGetIdentifierForName(name, &identifier);
-    else if (_UISharedImageNameGetIdentifier != NULL) {
-        identifier = _UISharedImageNameGetIdentifier(name);
-        packed = identifier != -1;
-    } else {
-        identifier = -1;
-        packed = false;
-    }
-
     if (Debug_)
-        NSLog(@"WB:Debug: _UISharedImageNameGetIdentifier(\"%@\") = %d", name, identifier);
-
-    if (!packed)
-        return __UIImageWithName(name);
-    else {
-        NSNumber *key([NSNumber numberWithInt:identifier]);
-        UIImage *image([UIImages_ objectForKey:key]);
-        if (image != nil)
-            return reinterpret_cast<id>(image) == [NSNull null] ? __UIImageWithName(name) : image;
-        if (NSString *path = $pathForFile$inBundle$(name, _UIKitBundle(), true, true))
-            image = $getImage$(path);
-        [UIImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:key];
-        if (image != nil)
-            return image;
-
-        image = __UIImageWithName(name);
-
-        if (UIDebug_) {
-            NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
-            if (![Manager_ fileExistsAtPath:path])
-                [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
-        }
-
-        return image;
-    }
+        NSLog(@"WB:Debug: _UIImageWithName(\"%@\")", name);
+    return WBCacheUIImage(
+        [=](){ return __UIImageWithName(name); },
+    name, [NSString stringWithFormat:@"I:%@", name]);
 }
 // }}}
 // %hook _UIImageWithNameInDomain() {{{
 MSHook(UIImage *, _UIImageWithNameInDomain, NSString *name, NSString *domain) {
-    NSString *key([NSString stringWithFormat:@"D:%zu%@%@", size_t([domain length]), domain, name]);
-    UIImage *image([PathImages_ objectForKey:key]);
-    if (image != nil)
-        return reinterpret_cast<id>(image) == [NSNull null] ? __UIImageWithNameInDomain(name, domain) : image;
     if (Debug_)
-        NSLog(@"WB:Debug: UIImageWithNameInDomain(\"%@\", \"%@\")", name, domain);
-    if (NSString *path = $getTheme$($useScale$([NSArray arrayWithObject:[NSString stringWithFormat:@"Domains/%@/%@", domain, name]])))
-        image = $getImage$(path);
-    [PathImages_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:key];
-    return image == nil ? __UIImageWithNameInDomain(name, domain) : image;
+        NSLog(@"WB:Debug: _UIImageWithNameInDomain(\"%@\", \"%@\")", name, domain);
+    return WBCacheImage(
+        [=](){ return __UIImageWithNameInDomain(name, domain); },
+        [=](){ return $getTheme$($useScale$([NSArray arrayWithObject:[NSString stringWithFormat:@"Domains/%@/%@", domain, name]])); },
+    [NSString stringWithFormat:@"D:%zu:%@%@", size_t([domain length]), domain, name]);
+}
+// }}}
+// %hook _UIImageWithDeviceUsingCurrentIdiom() {{{
+MSHook(UIImage *, _UIImageWithNameUsingCurrentIdiom, NSString *name) {
+    if (Debug_)
+        NSLog(@"WB:Debug: _UIImageWithNameUsingCurrentIdiom(\"%@\")", name);
+    return WBCacheUIImage(
+        [=](){ return __UIImageWithNameUsingCurrentIdiom(name); },
+    name, [NSString stringWithFormat:@"I:%@", name]);
+}
+// }}}
+// %hook _UIImageWithDeviceSpecificName() {{{
+MSHook(UIImage *, _UIImageWithDeviceSpecificName, NSString *name) {
+    if (Debug_)
+        NSLog(@"WB:Debug: _UIImageWithDeviceSpecificName(\"%@\")", name);
+    return WBCacheUIImage(
+        [=](){ return __UIImageWithDeviceSpecificName(name); },
+    name, [NSString stringWithFormat:@"S:%@", name]);
 }
 // }}}
 
@@ -2389,20 +2355,23 @@ MSInitialize {
         class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
         class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
 
-        if (kCFCoreFoundationVersionNumber > 700) { // XXX: iOS 6.x
-            WBRename(UIImageTableArtwork, initWithName:inBundle:, initWithName$inBundle$);
-            WBRename(UIImageTableArtwork, imageNamed:device:, imageNamed$device$);
-        } else {
-            WBHookSymbol(image, _UIApplicationImageWithName);
-            WBHookSymbol(image, _UIImageWithNameInDomain);
-            WBHookSymbol(image, _UIKitBundle);
-            WBHookSymbol(image, _UIPackedImageTableGetIdentifierForName);
-            WBHookSymbol(image, _UISharedImageNameGetIdentifier);
+        WBHookSymbol(image, _UIKitBundle);
+        WBHookSymbol(image, _UIPackedImageTableGetIdentifierForName);
+        WBHookSymbol(image, _UISharedImageNameGetIdentifier);
 
-            MSHookFunction(_UIApplicationImageWithName, &$_UIApplicationImageWithName, &__UIApplicationImageWithName);
-            MSHookFunction(_UIImageWithName, &$_UIImageWithName, &__UIImageWithName);
-            MSHookFunction(_UIImageWithNameInDomain, &$_UIImageWithNameInDomain, &__UIImageWithNameInDomain);
-        }
+        MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
+
+        WBHookSymbol(image, _UIApplicationImageWithName);
+        MSHookFunction(_UIApplicationImageWithName, MSHake(_UIApplicationImageWithName));
+
+        WBHookSymbol(image, _UIImageWithNameInDomain);
+        MSHookFunction(_UIImageWithNameInDomain, MSHake(_UIImageWithNameInDomain));
+
+        WBHookSymbol(image, _UIImageWithNameUsingCurrentIdiom);
+        MSHookFunction(_UIImageWithNameUsingCurrentIdiom, MSHake(_UIImageWithNameUsingCurrentIdiom));
+
+        WBHookSymbol(image, _UIImageWithDeviceSpecificName);
+        MSHookFunction(_UIImageWithDeviceSpecificName, MSHake(_UIImageWithDeviceSpecificName));
     }
     // }}}
 

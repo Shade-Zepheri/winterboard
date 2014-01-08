@@ -17,7 +17,7 @@ WinterBoardSettings: Settings.mm makefile
 	    -lobjc
 
 WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../substrate/substrate.h
-	$(cycc) -dynamiclib \
+	$(cycc) -std=c++11 -dynamiclib \
 	    -framework CoreFoundation \
 	    -framework Foundation \
 	    -framework CoreGraphics \
