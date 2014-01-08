@@ -105,8 +105,6 @@ bool _itv;
 
 #include "WBMarkup.h"
 
-extern "C" void __clear_cache (char *beg, char *end);
-
 static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_AssociationPolicy policy);
 static id (*$objc_getAssociatedObject)(id object, void *key);
 static void (*$objc_removeAssociatedObjects)(id object);
