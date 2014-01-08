@@ -776,7 +776,7 @@ MSInstanceMessageHook6(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreak
     if (state == NULL)
         return MSOldCall(point, width, font, mode, spacing, emoji);
 
-    if (--state->count_ == 0)
+    if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
         return MSOldCall(point, width, font, mode, spacing, emoji);
@@ -800,7 +800,7 @@ MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alig
     if (state == NULL)
         return MSOldCall(rect, font, mode, alignment, spacing, emoji, truncation);
 
-    if (--state->count_ == 0)
+    if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
         return MSOldCall(rect, font, mode, alignment, spacing, emoji, truncation);
@@ -841,7 +841,7 @@ MSInstanceMessageHook4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,let
     if (state == NULL)
         return MSOldCall(font, width, mode, spacing);
 
-    if (--state->count_ == 0)
+    if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
         return MSOldCall(font, width, mode, spacing);
@@ -862,7 +862,7 @@ MSInstanceMessageHook1(CGSize, NSString, sizeWithFont, UIFont *, font) {
     if (state == NULL)
         return MSOldCall(font);
 
-    if (--state->count_ == 0)
+    if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
         return MSOldCall(font);
@@ -879,7 +879,7 @@ MSClassMessageHook2(UIImage *, SBIconAccessoryImage, checkoutAccessoryImageForIc
     if ([self _imageClassForIcon:icon location:location] != $SBIconBadgeImage)
         return MSOldCall(icon, location);
 
-    WBStringDrawingState badgeState = {NULL, -1, @""
+    WBStringDrawingState badgeState = {NULL, 0, @""
     , @"BadgeStyle"};
 
     stringDrawingState_ = &badgeState;
@@ -891,7 +891,7 @@ MSClassMessageHook2(UIImage *, SBIconAccessoryImage, checkoutAccessoryImageForIc
 }
 
 MSInstanceMessageHook1(UIImage *, SBIconBadgeFactory, checkoutBadgeImageForText, NSString *, text) {
-    WBStringDrawingState badgeState = {NULL, -1, @""
+    WBStringDrawingState badgeState = {NULL, 0, @""
     , @"BadgeStyle"};
 
     stringDrawingState_ = &badgeState;
