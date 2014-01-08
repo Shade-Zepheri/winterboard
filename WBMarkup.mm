@@ -70,6 +70,13 @@ static WBMarkup *SharedMarkup_;
     MSHookSymbol(WKViewLockFocus$, "WKViewLockFocus", WebCore);
     MSHookSymbol(WKViewUnlockFocus$, "WKViewUnlockFocus", WebCore);
     MSHookSymbol(WKViewDisplayRect$, "WKViewDisplayRect", WebCore);
+
+    MSImageRef JavaScriptCore(MSGetImageByName("/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"));
+
+    void (*_ZN3JSC19initializeThreadingEv)();
+    MSHookSymbol(_ZN3JSC19initializeThreadingEv, "__ZN3JSC19initializeThreadingEv", JavaScriptCore);
+    if (_ZN3JSC19initializeThreadingEv != NULL)
+        (*_ZN3JSC19initializeThreadingEv)();
 }
 
 + (BOOL) isSharedMarkupCreated {
