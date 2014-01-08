@@ -127,8 +127,6 @@ static NSString *_plist;
 
 @property (nonatomic, retain) NSMutableArray *themes;
 
-+ (void) load;
-
 - (id) initForContentSize:(CGSize)size;
 - (id) view;
 - (id) navigationTitle;
@@ -150,7 +148,7 @@ static NSString *_plist;
 
 @synthesize themes = _themes;
 
-+ (void) load {
++ (void) initialize {
     NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
     checkImage = [_UIImageWithName(@"UIPreferencesBlueCheck.png") retain];
     uncheckedImage = [[UIImage imageWithContentsOfFile:@"/System/Library/PreferenceBundles/WinterBoardSettings.bundle/SearchResultsCheckmarkClear.png"] retain];
