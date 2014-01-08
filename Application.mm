@@ -30,7 +30,6 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 
-#include <substrate.h>
 #include <mach-o/dyld.h>
 
 static NSBundle *wbSettingsBundle;
@@ -168,16 +167,8 @@ static Class $WBSettingsController;
 
 @end
 
-MSHook(int32_t, NSVersionOfLinkTimeLibrary, const char *name) {
-    if (strcmp(name, "UIKit") == 0)
-        return 0x6400000;
-    return _NSVersionOfLinkTimeLibrary(name);
-}
-
 int main(int argc, char *argv[]) {
     NSAutoreleasePool *pool( [[NSAutoreleasePool alloc] init]);
-
-    MSHookFunction(NSVersionOfLinkTimeLibrary, MSHake(NSVersionOfLinkTimeLibrary));
 
     int value = UIApplicationMain(argc, argv, @"WBApplication", @"WBApplication");
 
