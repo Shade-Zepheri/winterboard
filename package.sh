@@ -42,7 +42,7 @@ cp -a *.theme package/Library/Themes
 find package -name .svn | while read -r line; do rm -rf "${line}"; done
 cp -a extrainst_ preinst prerm package/DEBIAN
 sed -e "s/VERSION/$(./version.sh)/g" control >package/DEBIAN/control
-cp -a Test.sh Default-568h@2x.png Icon-Small.png icon.png icon-72.png icon@2x.png WinterBoard.dylib WinterBoard Info.plist package/Applications/WinterBoard.app
+cp -a Test.sh Default-568h@2x.png Icon-Small.png icon{,-72,@2x}.png icon7{,@2x}{,~ipad}.png WinterBoard.dylib WinterBoard Info.plist package/Applications/WinterBoard.app
 chown -R 0:0 package
 file="winterboard_$(grep ^Version: package/DEBIAN/control | cut -d ' ' -f 2)_iphoneos-arm.deb"; echo "$file"; ln -sf "$file" winterboard.deb
 dpkg-deb -Zlzma -b package winterboard.deb

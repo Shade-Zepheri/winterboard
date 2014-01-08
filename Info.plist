@@ -55,6 +55,11 @@
         <string>icon.png</string>
         <string>icon-72.png</string>
         <string>icon@2x.png</string>
+
+        <string>icon7.png</string>
+        <string>icon7@2x.png</string>
+        <string>icon7~ipad.png</string>
+        <string>icon7@2x~ipad.png</string>
     </array>
 
     <key>UIApplicationExitsOnSuspend</key>
