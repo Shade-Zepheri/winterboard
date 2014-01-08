@@ -1,4 +1,4 @@
-cycc = cycc -i2.0 -o$@ -- $(filter %.mm,$^) -g0 -O2 -Werror -Iiphone-api -F/System/Library/PrivateFrameworks
+cycc = cycc -i2.0 -o$@ -- $(filter %.mm,$^) -g0 -O2 -Werror -Iiphone-api -F/System/Library/PrivateFrameworks -Xarch_armv6 -marm
 
 substrate := -I../substrate -L../substrate -lsubstrate
 
