@@ -1,4 +1,4 @@
-cycc = cycc -i2.0 -o$@ -- -Iiphone-api
+cycc = cycc -i2.0 -o$@ -- $(filter %.mm,$^) -g0 -O2 -Werror -Iiphone-api -F/System/Library/PrivateFrameworks
 
 substrate := -I../substrate -L../substrate -lsubstrate
 
@@ -8,16 +8,38 @@ clean:
 	rm -f WinterBoard WinterBoard.dylib
 
 WinterBoardSettings: Settings.mm makefile
-	$(cycc) -dynamiclib -g0 -O2 $(filter %.mm,$^) -framework UIKit -framework CoreFoundation -framework Foundation -lobjc -framework CoreGraphics -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks
+	$(cycc) -dynamiclib \
+	    -framework UIKit \
+	    -framework CoreFoundation \
+	    -framework Foundation \
+	    -framework CoreGraphics \
+	    -framework Preferences \
+	    -lobjc
 
 WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../substrate/substrate.h
-	$(cycc) -dynamiclib -g0 -O2 $(filter %.mm,$^) -framework CoreFoundation -framework Foundation -lobjc -I/apl/inc/iPhoneOS-2.0 -framework CoreGraphics -framework ImageIO -framework GraphicsServices -framework Celestial $(substrate) -framework UIKit -framework WebCore -framework WebKit -F$(PKG_ROOT)/System/Library/PrivateFrameworks
+	$(cycc) -dynamiclib \
+	    -framework CoreFoundation \
+	    -framework Foundation \
+	    -framework CoreGraphics \
+	    -framework ImageIO \
+	    -framework GraphicsServices \
+	    -framework Celestial \
+	    -framework UIKit \
+	    -framework WebCore \
+	    -framework WebKit \
+	    -lobjc $(substrate)
 
 WinterBoard: Application.mm makefile
-	$(cycc) -g0 -O2 -Werror $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc -framework CoreGraphics -I/apl/sdk -framework Preferences -F$(PKG_ROOT)/System/Library/PrivateFrameworks $(substrate)
+	$(cycc) \
+	    -framework UIKit \
+	    -framework Foundation \
+	    -framework CoreFoundation \
+	    -framework CoreGraphics \
+	    -framework Preferences \
+	    -lobjc
 
 Optimize: Optimize.cpp makefile
-	$(cycc) -g0 -O2 -Werror $(filter %.cpp,$^)
+	$(cycc) $(filter %.cpp,$^)
 
 package: all
 	sudo ./package.sh
