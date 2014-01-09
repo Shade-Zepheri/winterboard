@@ -2152,9 +2152,11 @@ static void SBInitialize() {
     WBRename(SBIconModel, getCachedImagedForIcon:, getCachedImagedForIcon$);
     WBRename(SBIconModel, getCachedImagedForIcon:smallIcon:, getCachedImagedForIcon$smallIcon$);
 
-    WBRename(SBSearchView, initWithFrame:, initWithFrame$);
-    WBRename(SBSearchTableViewCell, drawRect:, drawRect$);
-    WBRename(SBSearchTableViewCell, initWithStyle:reuseIdentifier:, initWithStyle$reuseIdentifier$);
+    if (kCFCoreFoundationVersionNumber < 800) {
+        WBRename(SBSearchView, initWithFrame:, initWithFrame$);
+        WBRename(SBSearchTableViewCell, drawRect:, drawRect$);
+        WBRename(SBSearchTableViewCell, initWithStyle:reuseIdentifier:, initWithStyle$reuseIdentifier$);
+    }
 
     //WBRename(SBImageCache, initWithName:forImageWidth:imageHeight:initialCapacity:, initWithName$forImageWidth$imageHeight$initialCapacity$);
 
