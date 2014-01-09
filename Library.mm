@@ -604,7 +604,7 @@ MSHook(UIImage *, SBApplicationIcon$generateIconImage$, SBApplicationIcon *self,
                     return [UIImage imageWithContentsOfFile:path72];
             if (NSString *path = $pathForIcon$([self application]))
                 if (UIImage *image = [UIImage imageWithContentsOfFile:path]) {
-                    float width;
+                    CGFloat width;
                     if ([$SBIcon respondsToSelector:@selector(defaultIconImageSize)])
                         width = [$SBIcon defaultIconImageSize].width;
                     else
@@ -689,13 +689,13 @@ MSInstanceMessageHook2(NSString *, NSBundle, pathForResource,ofType, NSString *,
 
 static void $drawLabel$(NSString *label, CGRect rect, NSString *style, NSString *custom) {
     bool ellipsis(false);
-    float max = rect.size.width - 11, width;
+    CGFloat max = rect.size.width - 11, width;
   width:
     width = [(ellipsis ? [label stringByAppendingString:@"..."] : label) sizeWithStyle:style forWidth:320].width;
 
     if (width > max) {
         size_t length([label length]);
-        float spacing((width - max) / (length - 1));
+        CGFloat spacing((width - max) / (length - 1));
 
         if (spacing > 1.25) {
             ellipsis = true;
@@ -976,7 +976,7 @@ MSHook(void, SBCalendarIconContentsView$drawRect$, SBCalendarIconContentsView *s
     if (NSString *style = [Info_ objectForKey:@"CalendarIconDayStyle"])
         daystyle = [daystyle stringByAppendingString:style];
 
-    float width([self bounds].size.width);
+    CGFloat width([self bounds].size.width);
     float leeway(10);
     CGSize datesize = [(NSString *)date sizeWithStyle:datestyle forWidth:(width + leeway)];
     CGSize daysize = [(NSString *)day sizeWithStyle:daystyle forWidth:(width + leeway)];
@@ -2105,7 +2105,7 @@ static void NSString$drawInRect$withStyle$(NSString *self, SEL _cmd, CGRect rect
     return [[WBMarkup sharedMarkup] drawString:self inRect:rect withStyle:style];
 }
 
-static CGSize NSString$sizeWithStyle$forWidth$(NSString *self, SEL _cmd, NSString *style, float width) {
+static CGSize NSString$sizeWithStyle$forWidth$(NSString *self, SEL _cmd, NSString *style, CGFloat width) {
     if (style == nil || [style length] == 0)
         style = @"font-family: Helvetica; font-size: 12px";
     CGSize size([[WBMarkup sharedMarkup] sizeOfString:self withStyle:style forWidth:width]);
@@ -2346,9 +2346,15 @@ MSInitialize {
     // }}}
     // UIKit {{{
     if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/UIKit.framework/UIKit")) {
+#ifdef __LP64__
+        class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v40@0:8{CGPoint=dd}16@32");
+        class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v56@0:8{CGRect={CGSize=dd}{CGSize=dd}}16@48");
+        class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=dd}32@0:8@16d24");
+#else
         class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v20@0:4{CGPoint=ff}8@16");
         class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
         class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
+#endif
 
         WBHookSymbol(image, _UIKitBundle);
         WBHookSymbol(image, _UIPackedImageTableGetIdentifierForName);

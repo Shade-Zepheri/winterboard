@@ -28,11 +28,11 @@
 - (void) setStringDrawingOrigin:(CGPoint)origin;
 - (void) clearStringDrawingOrigin;
 
-- (CGSize) sizeOfMarkup:(NSString *)markup forWidth:(float)width;
-- (CGSize) sizeOfString:(NSString *)string withStyle:(NSString *)style forWidth:(float)width;
+- (CGSize) sizeOfMarkup:(NSString *)markup forWidth:(CGFloat)width;
+- (CGSize) sizeOfString:(NSString *)string withStyle:(NSString *)style forWidth:(CGFloat)width;
 
 - (NSString *) _styleFormatString:(NSString *)style;
-- (void) _setupWithStyle:(NSString *)style width:(float)width height:(float)height;
+- (void) _setupWithStyle:(NSString *)style width:(CGFloat)width height:(CGFloat)height;
 - (BOOL) _webPrepareContextForTextDrawing:(BOOL)drawing;
 
 - (void) drawMarkup:(NSString *)markup atPoint:(CGPoint)point;

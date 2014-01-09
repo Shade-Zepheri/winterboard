@@ -151,7 +151,7 @@ static WBMarkup *SharedMarkup_;
     origin_ = CGPointZero;
 }
 
-- (CGSize) sizeOfMarkup:(NSString *)markup forWidth:(float)width {
+- (CGSize) sizeOfMarkup:(NSString *)markup forWidth:(CGFloat)width {
     WebThreadLock();
 
     if (![self _webPrepareContextForTextDrawing:NO])
@@ -168,7 +168,7 @@ static WBMarkup *SharedMarkup_;
     return [[view_ mainFrame] renderedSizeOfNode:text_ constrainedToWidth:width];
 }
 
-- (CGSize) sizeOfString:(NSString *)string withStyle:(NSString *)style forWidth:(float)width {
+- (CGSize) sizeOfString:(NSString *)string withStyle:(NSString *)style forWidth:(CGFloat)width {
     WebThreadLock();
 
     if (![self _webPrepareContextForTextDrawing:NO])
@@ -190,7 +190,7 @@ static WBMarkup *SharedMarkup_;
     return style;
 }
 
-- (void) _setupWithStyle:(NSString *)style width:(float)width height:(float)height {
+- (void) _setupWithStyle:(NSString *)style width:(CGFloat)width height:(CGFloat)height {
     WebThreadLock();
 
     if (style != nil && [style length] != 0)
