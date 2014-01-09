@@ -769,21 +769,23 @@ static NSString *WBColorMarkup() {
     return [NSString stringWithFormat:@"color: rgba(%g, %g, %g, %g)", r * 255, g * 255, b * 255, a];
 }
 
-MSInstanceMessageHook6(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreakMode,letterSpacing,includeEmoji, CGPoint, point, float, width, UIFont *, font, UILineBreakMode, mode, float, spacing, BOOL, emoji) {
-    //NSLog(@"XXX: @\"%@\" %g", self, spacing);
+extern "C" NSString *NSStringFromCGPoint(CGPoint rect);
+
+MSInstanceMessageHook5(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreakMode,letterSpacing, CGPoint, point, CGFloat, width, UIFont *, font, UILineBreakMode, mode, CGFloat, spacing) {
+    //NSLog(@"XXX: @\"%@\" %@ %g \"%@\" %u %g", self, NSStringFromCGPoint(point), width, font, mode, spacing);
 
     WBStringDrawingState *state(stringDrawingState_);
     if (state == NULL)
-        return MSOldCall(point, width, font, mode, spacing, emoji);
+        return MSOldCall(point, width, font, mode, spacing);
 
     if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
-        return MSOldCall(point, width, font, mode, spacing, emoji);
+        return MSOldCall(point, width, font, mode, spacing);
 
     NSString *info([Info_ objectForKey:state->info_]);
     if (info == nil)
-        return MSOldCall(point, width, font, mode, spacing, emoji);
+        return MSOldCall(point, width, font, mode, spacing);
 
     NSString *base(state->base_ ?: @"");
     NSString *extra([NSString stringWithFormat:@"letter-spacing: %gpx", spacing]);
@@ -794,7 +796,7 @@ MSInstanceMessageHook6(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreak
 extern "C" NSString *NSStringFromCGRect(CGRect rect);
 
 MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alignment,lineSpacing,includeEmoji,truncationRect, CGRect, rect, UIFont *, font, UILineBreakMode, mode, UITextAlignment, alignment, float, spacing, BOOL, emoji, CGRect, truncation) {
-    //NSLog(@"XXX: &\"%@\" %@ \"%@\" %u %u %g %u %@", self, NSStringFromCGRect(rect), font, mode, alignment, spacing, emoji, NSStringFromCGRect(truncation));
+    //NSLog(@"XXX: @\"%@\" %@ \"%@\" %u %u %g %u %@", self, NSStringFromCGRect(rect), font, mode, alignment, spacing, emoji, NSStringFromCGRect(truncation));
 
     WBStringDrawingState *state(stringDrawingState_);
     if (state == NULL)
