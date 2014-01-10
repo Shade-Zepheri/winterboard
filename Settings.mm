@@ -48,6 +48,31 @@ static BOOL settingsChanged;
 static NSMutableDictionary *_settings;
 static NSString *_plist;
 
+void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
+    NSArray *themes([[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL]);
+    for (NSString *theme in themes) {
+        if (NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/%@/Info.plist", folder, theme]]) {
+            if (NSArray *version = [info objectForKey:@"CoreFoundationVersion"]) {
+                size_t count([version count]);
+                if (count == 0 || count > 2)
+                    continue;
+
+                double lower([[version objectAtIndex:0] doubleValue]);
+                if (kCFCoreFoundationVersionNumber < lower)
+                    continue;
+
+                if (count != 1) {
+                    double upper([[version objectAtIndex:1] doubleValue]);
+                    if (upper <= kCFCoreFoundationVersionNumber)
+                        continue;
+                }
+            }
+        }
+
+        [themesOnDisk addObject:theme];
+    }
+}
+
 /* [NSObject yieldToSelector:(withObject:)] {{{*/
 @interface NSObject (wb$yieldToSelector)
 - (id) wb$yieldToSelector:(SEL)selector withObject:(id)object;
@@ -172,16 +197,8 @@ static NSString *_plist;
         }
 
         NSMutableArray *themesOnDisk([NSMutableArray array]);
-
-        [themesOnDisk
-            addObjectsFromArray:[[NSFileManager defaultManager]
-            contentsOfDirectoryAtPath:@"/Library/Themes" error:NULL]
-        ];
-
-        [themesOnDisk addObjectsFromArray:[[NSFileManager defaultManager]
-            contentsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Library/SummerBoard/Themes", NSHomeDirectory()]
-            error:NULL
-        ]];
+        AddThemes(themesOnDisk, @"/Library/Themes");
+        AddThemes(themesOnDisk, [NSString stringWithFormat:@"%@/Library/SummerBoard/Themes", NSHomeDirectory()]);
 
         for (int i = 0, count = [themesOnDisk count]; i < count; i++) {
             NSString *theme = [themesOnDisk objectAtIndex:i];
