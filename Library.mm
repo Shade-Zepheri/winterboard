@@ -1784,6 +1784,15 @@ MSClassMessage2(id, SBIconView, _labelImageParametersForIcon,location, id, icon,
     } return nil;
 }
 
+MSInstanceMessage0(id, SBIconView, _labelImageParameters) {
+    if (id parameters = MSOldCall()) {
+        int &location(MSHookIvar<int>(self, "_iconLocation"));
+        if (&location != NULL)
+            $objc_setAssociatedObject(parameters, @selector(wb$inDock), [NSNumber numberWithBool:(location == 3)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return parameters;
+    } return nil;
+}
+
 MSClassMessage1(UIImage *, SBIconLabelImage, _drawLabelImageForParameters, id, parameters) {
     bool docked(wb$inDock(parameters));
 
@@ -2140,6 +2149,7 @@ static void SBInitialize() {
     } else {
         WBRename(SBIconLabelImageParameters, hash, hash);
         WBRename($SBIconView, _labelImageParametersForIcon:location:, _labelImageParametersForIcon$location$);
+        WBRename(SBIconView, _labelImageParameters, _labelImageParameters);
         WBRename($SBIconLabelImage, _drawLabelImageForParameters:, _drawLabelImageForParameters$);
     }
 
