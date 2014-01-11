@@ -910,7 +910,11 @@ MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, 
         "text-shadow: rgba(0, 0, 0, 0.2) -1px -1px 2px;"
     , @"CalendarIconDayStyle"};
 
-    WBStringDrawingState sizeState = {&dayState, 7, nil, nil};
+    WBStringDrawingState wtfState = {&dayState, 1, nil, nil};
+
+    WBStringDrawingState sizeState = {
+        kCFCoreFoundationVersionNumber > 800 ? &wtfState : &dayState
+    , 7, nil, nil};
 
     WBStringDrawingState dateState = {&sizeState, 2, @""
     , @"CalendarIconDateStyle"};
