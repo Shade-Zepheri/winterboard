@@ -2394,6 +2394,16 @@ MSInitialize {
         if (![@"" respondsToSelector:includeEmoji])
             includeEmoji = @selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:);
         MSHookMessage($NSString, includeEmoji, MSHake(NSString$drawAtPoint$forWidth$withFont$lineBreakMode$letterSpacing$includeEmoji$));
+
+        SEL letterSpacing(@selector(_legacy_sizeWithFont:forWidth:lineBreakMode:letterSpacing:));
+        if (![@"" respondsToSelector:letterSpacing])
+            letterSpacing = @selector(sizeWithFont:forWidth:lineBreakMode:letterSpacing:);
+        MSHookMessage($NSString, letterSpacing, MSHake(NSString$sizeWithFont$forWidth$lineBreakMode$letterSpacing$));
+
+        SEL sizeWithFont(@selector(_legacy_sizeWithFont:));
+        if (![@"" respondsToSelector:sizeWithFont])
+            sizeWithFont = @selector(sizeWithFont:);
+        MSHookMessage($NSString, sizeWithFont, MSHake(NSString$sizeWithFont$));
     }
     // }}}
 
