@@ -771,21 +771,21 @@ static NSString *WBColorMarkup() {
 
 extern "C" NSString *NSStringFromCGPoint(CGPoint rect);
 
-MSInstanceMessageHook5(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreakMode,letterSpacing, CGPoint, point, CGFloat, width, UIFont *, font, UILineBreakMode, mode, CGFloat, spacing) {
-    //NSLog(@"XXX: @\"%@\" %@ %g \"%@\" %u %g", self, NSStringFromCGPoint(point), width, font, mode, spacing);
+MSInstanceMessage6(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreakMode,letterSpacing,includeEmoji, CGPoint, point, CGFloat, width, UIFont *, font, UILineBreakMode, mode, CGFloat, spacing, BOOL, emoji) {
+    //NSLog(@"XXX: @\"%@\" %@ %g \"%@\" %u %g %u", self, NSStringFromCGPoint(point), width, font, mode, spacing, emoji);
 
     WBStringDrawingState *state(stringDrawingState_);
     if (state == NULL)
-        return MSOldCall(point, width, font, mode, spacing);
+        return MSOldCall(point, width, font, mode, spacing, emoji);
 
     if (state->count_ != 0 && --state->count_ == 0)
         stringDrawingState_ = state->next_;
     if (state->info_ == nil)
-        return MSOldCall(point, width, font, mode, spacing);
+        return MSOldCall(point, width, font, mode, spacing, emoji);
 
     NSString *info([Info_ objectForKey:state->info_]);
     if (info == nil)
-        return MSOldCall(point, width, font, mode, spacing);
+        return MSOldCall(point, width, font, mode, spacing, emoji);
 
     NSString *base(state->base_ ?: @"");
     NSString *extra([NSString stringWithFormat:@"letter-spacing: %gpx", spacing]);
@@ -2385,6 +2385,11 @@ MSInitialize {
 
         WBHookSymbol(image, _UIImageWithDeviceSpecificName);
         MSHookFunction(_UIImageWithDeviceSpecificName, MSHake(_UIImageWithDeviceSpecificName));
+
+        SEL includeEmoji(@selector(_legacy_drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:));
+        if (![@"" respondsToSelector:includeEmoji])
+            includeEmoji = @selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:);
+        MSHookMessage($NSString, includeEmoji, MSHake(NSString$drawAtPoint$forWidth$withFont$lineBreakMode$letterSpacing$includeEmoji$));
     }
     // }}}
 
