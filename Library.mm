@@ -836,7 +836,7 @@ MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alig
     return CGSizeZero;
 }
 
-MSInstanceMessageHook4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,letterSpacing, UIFont *, font, float, width, UILineBreakMode, mode, float, spacing) {
+MSInstanceMessage4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,letterSpacing, UIFont *, font, CGFloat, width, UILineBreakMode, mode, CGFloat, spacing) {
     //NSLog(@"XXX: #\"%@\" \"%@\" %g %u %g", self, font, width, mode, spacing);
 
     WBStringDrawingState *state(stringDrawingState_);
@@ -857,7 +857,7 @@ MSInstanceMessageHook4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,let
     return [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@;%@", [font markupDescription], WBColorMarkup(), extra, base, info] forWidth:width];
 }
 
-MSInstanceMessageHook1(CGSize, NSString, sizeWithFont, UIFont *, font) {
+MSInstanceMessage1(CGSize, NSString, sizeWithFont, UIFont *, font) {
     //NSLog(@"XXX: ?\"%@\"", self);
 
     WBStringDrawingState *state(stringDrawingState_);
