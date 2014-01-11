@@ -255,9 +255,6 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
             Scale_ = 1;
     }
 
-    if (Scale_ == 1)
-        return files;
-
     NSString *idiom(IsWild_ ? @"ipad" : @"iphone");
 
     NSMutableArray *scaled([NSMutableArray arrayWithCapacity:([files count] * 4)]);
