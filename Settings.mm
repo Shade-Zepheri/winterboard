@@ -572,8 +572,28 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
 }
 
 - (id) specifiers {
-    if (!_specifiers)
-        _specifiers = [[self loadSpecifiersFromPlistName:@"WinterBoard" target:self] retain];
+    if (!_specifiers) {
+        NSMutableArray *specifiers([NSMutableArray array]);
+        for (PSSpecifier *specifier in [self loadSpecifiersFromPlistName:@"WinterBoard" target:self]) {
+            if (NSArray *version = [specifier propertyForKey:@"wb$filter"]) {
+                size_t count([version count]);
+                if (count == 0 || count > 2)
+                    continue;
+
+                double lower([[version objectAtIndex:0] doubleValue]);
+                if (kCFCoreFoundationVersionNumber < lower)
+                    continue;
+
+                if (count != 1) {
+                    double upper([[version objectAtIndex:1] doubleValue]);
+                    if (upper <= kCFCoreFoundationVersionNumber)
+                        continue;
+                }
+            }
+            [specifiers addObject:specifier];
+        }
+        _specifiers = [specifiers retain];
+    }
     return _specifiers;
 }
 
