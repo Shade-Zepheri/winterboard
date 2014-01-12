@@ -678,6 +678,8 @@ MSHook(UIImage *, _UIApplicationImageWithName, NSString *name) {
 // %hook -[NSBundle pathForResource:ofType:] {{{
 MSInstanceMessageHook2(NSString *, NSBundle, pathForResource,ofType, NSString *, resource, NSString *, type) {
     NSString *file = type == nil ? resource : [NSString stringWithFormat:@"%@.%@", resource, type];
+    if ([file isEqualToString:@"Info.plist"])
+        return MSOldCall(resource, type);
     if (Debug_)
         NSLog(@"WB:Debug: [NSBundle(%@) pathForResource:\"%@\"]", [self bundleIdentifier], file);
     if (NSString *path = $pathForFile$inBundle$(file, self, false, false))
