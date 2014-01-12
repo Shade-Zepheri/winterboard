@@ -32,9 +32,12 @@ mkdir -p package/usr/libexec/package
 cp -a Optimize package/usr/libexec/package
 chmod 6755 package/usr/libexec/package/Optimize
 cp -a WinterBoardSettings.plist package/Library/PreferenceLoader/Preferences
+cp -a WinterBoardSettings7.plist package/Library/PreferenceLoader/Preferences
 cp -a WinterBoardSettings.bundle package/System/Library/PreferenceBundles
 cp -a Icon-Small.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon.png
 cp -a Icon-Small@2x.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon@2x.png
+cp -a Icon-Small7.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon7.png
+cp -a Icon-Small7@2x.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon7@2x.png
 cp -a SearchResultsCheckmarkClear.png WinterBoardSettings package/System/Library/PreferenceBundles/WinterBoardSettings.bundle
 ln -s /Applications/WinterBoard.app/WinterBoard.dylib package/Library/MobileSubstrate/DynamicLibraries
 cp -a WinterBoard.plist package/Library/MobileSubstrate/DynamicLibraries
