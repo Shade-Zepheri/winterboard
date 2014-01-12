@@ -1515,13 +1515,13 @@ WBDelegate(badge_)
 /* }}} */
 
 // IconAlpha {{{
-MSInstanceMessageHook1(void, SBIcon, setIconImageAlpha, float, alpha) {
+MSInstanceMessageHook1(void, SBIcon, setIconImageAlpha, CGFloat, alpha) {
     if (NSNumber *number = [Info_ objectForKey:@"IconAlpha"])
         alpha = [number floatValue];
     return MSOldCall(alpha);
 }
 
-MSInstanceMessageHook1(void, SBIcon, setIconLabelAlpha, float, alpha) {
+MSInstanceMessageHook1(void, SBIcon, setIconLabelAlpha, CGFloat, alpha) {
     if (NSNumber *number = [Info_ objectForKey:@"IconAlpha"])
         alpha = [number floatValue];
     return MSOldCall(alpha);
@@ -1542,7 +1542,7 @@ MSInstanceMessageHook0(id, SBIcon, initWithDefaultSize) {
     } return self;
 }
 
-MSInstanceMessageHook1(void, SBIcon, setAlpha, float, alpha) {
+MSInstanceMessageHook1(void, SBIcon, setAlpha, CGFloat, alpha) {
     if (NSNumber *number = [Info_ objectForKey:@"IconAlpha"])
         alpha = [number floatValue];
     return MSOldCall(alpha);
