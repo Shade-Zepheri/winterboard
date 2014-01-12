@@ -21,7 +21,6 @@ WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../substrate/subst
 	    -framework CoreFoundation \
 	    -framework Foundation \
 	    -framework CoreGraphics \
-	    -framework ImageIO \
 	    -framework GraphicsServices \
 	    -framework Celestial \
 	    -framework UIKit \
