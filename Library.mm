@@ -860,7 +860,7 @@ MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alig
 }
 
 MSInstanceMessage2(void, NSString, drawInRect,withAttributes, CGRect, rect, NSDictionary *, attributes) {
-    NSLog(@"XXX: *\"%@\" %@", self, attributes);
+    //NSLog(@"XXX: *\"%@\" %@", self, attributes);
 
     WBStringDrawingState *state(stringDrawingState_);
     if (state == NULL)
@@ -886,7 +886,7 @@ MSInstanceMessage2(void, NSString, drawInRect,withAttributes, CGRect, rect, NSDi
 extern "C" NSString *NSStringFromCGSize(CGSize size);
 
 MSInstanceMessage4(CGRect, NSString, boundingRectWithSize,options,attributes,context, CGSize, size, NSInteger, options, NSDictionary *, attributes, id, context) {
-    NSLog(@"XXX: $\"%@\" %@ 0x%x %@ %@", self, NSStringFromCGSize(size), unsigned(options), attributes, context);
+    //NSLog(@"XXX: $\"%@\" %@ 0x%x %@ %@", self, NSStringFromCGSize(size), unsigned(options), attributes, context);
 
     WBStringDrawingState *state(stringDrawingState_);
     if (state == NULL)
@@ -2277,8 +2277,10 @@ static void SBInitialize() {
     if (SummerBoard_)
         English_ = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SpringBoard.app/English.lproj/LocalizedApplicationNames.strings"];
 
-    WBRename(NSString, drawInRect:withAttributes:, drawInRect$withAttributes$);
-    WBRename(NSString, boundingRectWithSize:options:attributes:context:, boundingRectWithSize$options$attributes$context$);
+    if (kCFCoreFoundationVersionNumber >= 800) {
+        WBRename(NSString, drawInRect:withAttributes:, drawInRect$withAttributes$);
+        WBRename(NSString, boundingRectWithSize:options:attributes:context:, boundingRectWithSize$options$attributes$context$);
+    }
 }
 
 /*MSHook(int, open, const char *path, int oflag, mode_t mode) {
