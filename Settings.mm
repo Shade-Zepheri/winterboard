@@ -510,6 +510,13 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
     system("rm -rf /User/Library/Caches/com.apple.newsstand");
     system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
 
+    system("rm -rf /User/Library/Caches/BarDialer");
+    system("rm -rf /User/Library/Caches/BarDialer_selected");
+    system("rm -rf /User/Library/Caches/BarRecents");
+    system("rm -rf /User/Library/Caches/BarRecents_selected");
+    system("rm -rf /User/Library/Caches/BarVM");
+    system("rm -rf /User/Library/Caches/BarVM_selected");
+
     system("killall -9 lsd");
 
     if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
