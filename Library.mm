@@ -133,6 +133,8 @@ MSMetaClassHook(SBIconAccessoryImage)
 MSClassHook(SBIconBadge)
 MSClassHook(SBIconBadgeFactory)
 MSClassHook(SBIconBadgeImage)
+MSClassHook(SBIconBadgeView)
+MSMetaClassHook(SBIconBadgeView)
 MSClassHook(SBIconContentView)
 MSClassHook(SBIconController)
 MSClassHook(SBIconLabel)
@@ -723,25 +725,7 @@ static struct WBStringDrawingState {
 extern "C" CGColorSpaceRef CGContextGetFillColorSpace(CGContextRef);
 extern "C" void CGContextGetFillColor(CGContextRef, CGFloat[]);
 
-static NSString *WBColorMarkup() {
-    CGContextRef context(UIGraphicsGetCurrentContext());
-    //NSLog(@"XXX:1:%p", context);
-    if (context == NULL)
-        return @"";
-
-    CGColorSpaceRef space(CGContextGetFillColorSpace(context));
-    //NSLog(@"XXX:2:%p", space);
-    if (space == NULL)
-        return @"";
-
-    size_t number(CGColorSpaceGetNumberOfComponents(space));
-    //NSLog(@"XXX:3:%u", number);
-    if (number == 0)
-        return @"";
-
-    CGFloat components[number + 1];
-    CGContextGetFillColor(context, components);
-
+static NSString *WBColorMarkup(size_t number, const CGFloat *components) {
     CGFloat r, g, b, a;
 
     switch (number) {
@@ -764,6 +748,48 @@ static NSString *WBColorMarkup() {
     }
 
     return [NSString stringWithFormat:@"color: rgba(%g, %g, %g, %g)", r * 255, g * 255, b * 255, a];
+}
+
+static NSString *WBColorMarkup() {
+    CGContextRef context(UIGraphicsGetCurrentContext());
+    //NSLog(@"XXX:1:%p", context);
+    if (context == NULL)
+        return @"";
+
+    CGColorSpaceRef space(CGContextGetFillColorSpace(context));
+    //NSLog(@"XXX:2:%p", space);
+    if (space == NULL)
+        return @"";
+
+    size_t number(CGColorSpaceGetNumberOfComponents(space));
+    //NSLog(@"XXX:3:%u", number);
+    if (number == 0)
+        return @"";
+
+    CGFloat components[number + 1];
+    CGContextGetFillColor(context, components);
+    return WBColorMarkup(number, components);
+}
+
+static NSString *WBColorMarkup(UIColor *uicolor) {
+    if (uicolor == nil)
+        return @"";
+    CGColorRef cgcolor([uicolor CGColor]);
+    if (cgcolor == NULL)
+        return @"";
+
+    CGColorSpaceRef space(CGColorGetColorSpace(cgcolor));
+    //NSLog(@"XXX:2:%p", space);
+    if (space == NULL)
+        return @"";
+
+    size_t number(CGColorGetNumberOfComponents(cgcolor));
+    //NSLog(@"XXX:3:%u", number);
+    if (number == 0)
+        return @"";
+
+    const CGFloat *components(CGColorGetComponents(cgcolor));
+    return WBColorMarkup(number, components);
 }
 
 extern "C" NSString *NSStringFromCGPoint(CGPoint rect);
@@ -833,6 +859,56 @@ MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alig
     return CGSizeZero;
 }
 
+MSInstanceMessage2(void, NSString, drawInRect,withAttributes, CGRect, rect, NSDictionary *, attributes) {
+    NSLog(@"XXX: *\"%@\" %@", self, attributes);
+
+    WBStringDrawingState *state(stringDrawingState_);
+    if (state == NULL)
+        return MSOldCall(rect, attributes);
+
+    if (state->count_ != 0 && --state->count_ == 0)
+        stringDrawingState_ = state->next_;
+    if (state->info_ == nil)
+        return MSOldCall(rect, attributes);
+
+    NSString *info([Info_ objectForKey:state->info_]);
+    if (info == nil)
+        return MSOldCall(rect, attributes);
+
+    NSString *base(state->base_ ?: @"");
+
+    UIFont *font([attributes objectForKey:@"NSFont"]);
+    UIColor *color([attributes objectForKey:@"NSColor"]);
+
+    [self drawInRect:rect withStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(color), base, info]];
+}
+
+extern "C" NSString *NSStringFromCGSize(CGSize size);
+
+MSInstanceMessage4(CGRect, NSString, boundingRectWithSize,options,attributes,context, CGSize, size, NSInteger, options, NSDictionary *, attributes, id, context) {
+    NSLog(@"XXX: $\"%@\" %@ 0x%x %@ %@", self, NSStringFromCGSize(size), unsigned(options), attributes, context);
+
+    WBStringDrawingState *state(stringDrawingState_);
+    if (state == NULL)
+        return MSOldCall(size, options, attributes, context);
+
+    if (state->count_ != 0 && --state->count_ == 0)
+        stringDrawingState_ = state->next_;
+    if (state->info_ == nil)
+        return MSOldCall(size, options, attributes, context);
+
+    NSString *info([Info_ objectForKey:state->info_]);
+    if (info == nil)
+        return MSOldCall(size, options, attributes, context);
+
+    NSString *base(state->base_ ?: @"");
+
+    UIFont *font([attributes objectForKey:@"NSFont"]);
+    UIColor *color([attributes objectForKey:@"NSColor"]);
+
+    return (CGRect) {{0, 0}, [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(color), base, info] forWidth:size.width]};
+}
+
 MSInstanceMessage4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,letterSpacing, UIFont *, font, CGFloat, width, UILineBreakMode, mode, CGFloat, spacing) {
     //NSLog(@"XXX: #\"%@\" \"%@\" %g %u %g", self, font, width, mode, spacing);
 
@@ -872,6 +948,18 @@ MSInstanceMessage1(CGSize, NSString, sizeWithFont, UIFont *, font) {
 
     NSString *base(state->base_ ?: @"");
     return [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(), base, info] forWidth:65535];
+}
+
+MSClassMessageHook2(id, SBIconBadgeView, checkoutAccessoryImagesForIcon,location, id, icon, int, location) {
+    WBStringDrawingState badgeState = {NULL, 0, @""
+    , @"BadgeStyle"};
+
+    stringDrawingState_ = &badgeState;
+
+    id images(MSOldCall(icon, location));
+
+    stringDrawingState_ = NULL;
+    return images;
 }
 
 MSClassMessageHook2(UIImage *, SBIconAccessoryImage, checkoutAccessoryImageForIcon,location, id, icon, int, location) {
@@ -2188,6 +2276,9 @@ static void SBInitialize() {
 
     if (SummerBoard_)
         English_ = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SpringBoard.app/English.lproj/LocalizedApplicationNames.strings"];
+
+    WBRename(NSString, drawInRect:withAttributes:, drawInRect$withAttributes$);
+    WBRename(NSString, boundingRectWithSize:options:attributes:context:, boundingRectWithSize$options$attributes$context$);
 }
 
 /*MSHook(int, open, const char *path, int oflag, mode_t mode) {
