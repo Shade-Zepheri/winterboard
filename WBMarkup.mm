@@ -67,9 +67,9 @@ static WBMarkup *SharedMarkup_;
 
 + (void) initialize {
     MSImageRef WebCore(MSGetImageByName("/System/Library/PrivateFrameworks/WebCore.framework/WebCore"));
-    MSHookSymbol(WKViewLockFocus$, "WKViewLockFocus", WebCore);
-    MSHookSymbol(WKViewUnlockFocus$, "WKViewUnlockFocus", WebCore);
-    MSHookSymbol(WKViewDisplayRect$, "WKViewDisplayRect", WebCore);
+    MSHookSymbol(WKViewLockFocus$, "_WKViewLockFocus", WebCore);
+    MSHookSymbol(WKViewUnlockFocus$, "_WKViewUnlockFocus", WebCore);
+    MSHookSymbol(WKViewDisplayRect$, "_WKViewDisplayRect", WebCore);
 
     MSImageRef JavaScriptCore(MSGetImageByName("/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"));
 
