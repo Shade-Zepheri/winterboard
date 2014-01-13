@@ -1,6 +1,17 @@
 #!/bin/bash
-rm -f WinterBoard.dylib
 set -e
-rsync --exclude .svn -SPaz 'saurik@carrier.saurik.com:menes/winterboard/{WinterBoard{,.dylib},UIImages}' .
-rsync --exclude .svn -SPaz 'saurik@carrier.saurik.com:menes/winterboard/*.theme' /Library/Themes/
-#killall SpringBoard
+
+ip=$1
+app=$2
+
+if [[ -z $ip ]]; then
+    exit 1;
+fi
+
+make package
+scp -p winterboard.deb root@"$ip":
+ssh root@"$ip" dpkg -i winterboard.deb
+
+if [[ -n $app ]]; then
+    ssh root@"$ip" killall "$app"
+fi
