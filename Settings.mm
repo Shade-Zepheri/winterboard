@@ -509,6 +509,7 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
     system("rm -rf /User/Library/Caches/com.apple.IconsCache");
     system("rm -rf /User/Library/Caches/com.apple.newsstand");
     system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
+    system("rm -rf /User/Library/Caches/com.apple.UIStatusBar");
 
     system("rm -rf /User/Library/Caches/BarDialer");
     system("rm -rf /User/Library/Caches/BarDialer_selected");
