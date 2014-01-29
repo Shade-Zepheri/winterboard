@@ -5,7 +5,7 @@ substrate := -I../substrate -L../substrate -lsubstrate
 all: WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
 
 clean:
-	rm -f WinterBoard WinterBoard.dylib
+	rm -f WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
 
 WinterBoardSettings: Settings.mm makefile
 	$(cycc) -dynamiclib \
