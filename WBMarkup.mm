@@ -2,6 +2,8 @@
 
 #include <substrate.h>
 
+MSClassHook(UIWebDocumentView)
+
 @class WKView;
 
 extern "C" void WebThreadLock();
@@ -61,6 +63,10 @@ static void (*WKViewDisplayRect$)(WKView *, CGRect);
 - (void) setContentView:(WebView *)view;
 @end
 
+@interface UIWebDocumentView : NSObject
+- (WebView *) webView;
+@end
+
 static WBMarkup *SharedMarkup_;
 
 @implementation WBMarkup
@@ -93,7 +99,11 @@ static WBMarkup *SharedMarkup_;
     if ((self = [super init]) != nil) {
         WebThreadLock();
 
-        view_ = [[WebView alloc] initWithFrame:CGRectMake(0, 0, 640, 5000)];
+        if ($UIWebDocumentView == Nil)
+            view_ = [[WebView alloc] initWithFrame:CGRectMake(0, 0, 640, 5000)];
+        else
+            view_ = [[[$UIWebDocumentView alloc] initWithFrame:CGRectMake(0, 0, 640, 5000)] webView];
+
         [view_ setDrawsBackground:NO];
 
         WebPreferences *preferences([[WebPreferences alloc] initWithIdentifier:@"com.apple.webkit.webmarkup"]);
