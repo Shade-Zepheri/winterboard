@@ -93,8 +93,6 @@ static WBMarkup *SharedMarkup_;
     if ((self = [super init]) != nil) {
         WebThreadLock();
 
-        SharedMarkup_ = self;
-
         view_ = [[WebView alloc] initWithFrame:CGRectMake(0, 0, 640, 5000)];
         [view_ setDrawsBackground:NO];
 
