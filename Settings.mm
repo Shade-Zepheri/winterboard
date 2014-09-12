@@ -145,6 +145,28 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
 /* }}} */
 
 /* Theme Settings Controller {{{ */
+@interface WBSThemesTableViewCell : UITableViewCell {
+}
+
+@end
+
+@implementation WBSThemesTableViewCell
+
+- (id) initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuse {
+    if ((self = [super initWithFrame:frame reuseIdentifier:reuse]) != nil) {
+    } return self;
+}
+
+- (void) setTheme:(NSDictionary *)theme {
+    self.text = [theme objectForKey:@"Name"];
+    self.hidesAccessoryWhenEditing = NO;
+    NSNumber *active([theme objectForKey:@"Active"]);
+    BOOL inactive(active == nil || ![active boolValue]);
+    [self setImage:(inactive ? uncheckedImage : checkImage)];
+}
+
+@end
+
 @interface WBSThemesController: PSViewController <UITableViewDelegate, UITableViewDataSource> {
     UITableView *_tableView;
     NSMutableArray *_themes;
@@ -275,18 +297,14 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
 }
 
 - (id) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ThemeCell"];
+    WBSThemesTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ThemeCell"];
     if (!cell) {
-        cell = [[[UITableViewCell alloc] initWithFrame:CGRectMake(0, 0, 100, 100) reuseIdentifier:@"ThemeCell"] autorelease];
+        cell = [[[WBSThemesTableViewCell alloc] initWithFrame:CGRectMake(0, 0, 100, 100) reuseIdentifier:@"ThemeCell"] autorelease];
         //[cell setTableViewStyle:UITableViewCellStyleDefault];
     }
 
     NSDictionary *theme([_themes objectAtIndex:indexPath.row]);
-    cell.text = [theme objectForKey:@"Name"];
-    cell.hidesAccessoryWhenEditing = NO;
-    NSNumber *active([theme objectForKey:@"Active"]);
-    BOOL inactive(active == nil || ![active boolValue]);
-    [cell setImage:(inactive ? uncheckedImage : checkImage)];
+    [cell setTheme:theme];
     return cell;
 }
 
