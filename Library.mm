@@ -2001,7 +2001,9 @@ static UIImage *WBCacheUIImage(const Original_ &original, NSString *name, NSStri
         name = [name stringByAppendingString:@".png"];
     UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true); }, key));
     if (image != nil && UIDebug_) {
-        NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
+        NSString *path(@"/tmp/UIImages");
+        [Manager_ createDirectoryAtPath:path withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions: @0777} error:NULL];
+        path = [NSString stringWithFormat:@"%@/%@", path, name];
         if (![Manager_ fileExistsAtPath:path])
             [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
     } return image;
@@ -2504,14 +2506,6 @@ MSInitialize {
     // }}}
 
     //MSHookFunction(reinterpret_cast<int (*)(const char *, int, mode_t)>(&open), MSHake(open));
-
-    if (UIDebug_ && ![Manager_ fileExistsAtPath:@"/tmp/UIImages"]) {
-        NSError *error(nil);
-        if (![Manager_ createDirectoryAtPath:@"/tmp/UIImages" withIntermediateDirectories:NO attributes:[NSDictionary dictionaryWithObjectsAndKeys:
-            [NSNumber numberWithShort:0777], NSFilePosixPermissions,
-        nil] error:&error])
-            NSLog(@"WB:Error: cannot create /tmp/UIImages (%@)", error);
-    }
 
     [pool release];
 }
