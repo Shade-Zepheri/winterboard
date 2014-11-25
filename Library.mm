@@ -214,8 +214,6 @@ static UIImage *(*_UIImageWithNameInDomain)(NSString *name, NSString *domain);
 static UIImage *(*_UIImageWithNameUsingCurrentIdiom)(NSString *name);
 static UIImage *(*_UIImageWithDeviceSpecificName)(NSString *name);
 static NSBundle *(*_UIKitBundle)();
-static bool (*_UIPackedImageTableGetIdentifierForName)(NSString *, int *);
-static int (*_UISharedImageNameGetIdentifier)(NSString *);
 
 static NSMutableDictionary *Images_ = [[NSMutableDictionary alloc] initWithCapacity:64];
 static NSMutableDictionary *Cache_ = [[NSMutableDictionary alloc] initWithCapacity:64];
@@ -2463,8 +2461,6 @@ MSInitialize {
 #endif
 
         WBHookSymbol(image, _UIKitBundle);
-        WBHookSymbol(image, _UIPackedImageTableGetIdentifierForName);
-        WBHookSymbol(image, _UISharedImageNameGetIdentifier);
 
         MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
 
