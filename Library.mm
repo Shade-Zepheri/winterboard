@@ -434,7 +434,11 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
     if (path == nil || [path length] == 0 || [path isEqualToString:@"/"])
         return nil;
 
-    NSBundle *bundle([Bundles_ objectForKey:path]);
+    NSBundle *bundle;
+    @synchronized (Bundles_) {
+        bundle = [Bundles_ objectForKey:path];
+    }
+
     if (reinterpret_cast<id>(bundle) == [NSNull null])
         return nil;
     else if (bundle == nil) {
@@ -444,7 +448,10 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
             bundle = [NSBundle wb$bundleWithFile:path];
         if (Debug_)
             NSLog(@"WB:Debug:PathBundle(%@, %@)", path, bundle);
-        [Bundles_ setObject:(bundle == nil ? [NSNull null] : reinterpret_cast<id>(bundle)) forKey:path];
+
+        @synchronized (Bundles_) {
+            [Bundles_ setObject:(bundle == nil ? [NSNull null] : reinterpret_cast<id>(bundle)) forKey:path];
+        }
     }
 
     return bundle;
