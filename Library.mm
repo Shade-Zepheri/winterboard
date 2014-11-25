@@ -329,13 +329,12 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool ui, bool use) {
-    NSString *identifier = [bundle bundleIdentifier];
+static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NSString *folder, bool ui, bool use) {
     NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
 
     if (identifier != nil)
         [names addObject:[NSString stringWithFormat:@"Bundles/%@/%@", identifier, file]];
-    if (NSString *folder = [[bundle bundlePath] lastPathComponent]) {
+    if (folder != nil) {
         [names addObject:[NSString stringWithFormat:@"Folders/%@/%@", folder, file]];
         NSString *base([folder stringByDeletingPathExtension]);
         if ([base hasSuffix:@"~iphone"])
@@ -370,6 +369,10 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
         return path;
 
     return nil;
+}
+
+static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool ui, bool use) {
+    return $pathForFile$inBundle$(file, [bundle bundleIdentifier], [[bundle bundlePath] lastPathComponent], ui, use);
 }
 // }}}
 
