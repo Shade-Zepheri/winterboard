@@ -329,7 +329,7 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NSString *folder, bool ui, bool use) {
+static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NSString *folder, bool use) {
     NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
 
     if (identifier != nil)
@@ -342,8 +342,6 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NS
         if ([base hasSuffix:@"~ipad"])
             [names addObject:[NSString stringWithFormat:@"Folders/%@.%@/%@", [base substringWithRange:NSMakeRange(0, [base length] - 5)], [folder pathExtension], file]];
     }
-    if (ui)
-        [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
 
     #define remapResourceName(oldname, newname) \
         else if ([file isEqualToString:(oldname)]) \
@@ -352,6 +350,8 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NS
     bool summer(SpringBoard_ && SummerBoard_);
 
     if (identifier == nil);
+    else if ([identifier isEqualToString:@"com.apple.UIKit"])
+        [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.chatkit"])
         [names addObject:[NSString stringWithFormat:@"Bundles/com.apple.MobileSMS/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.calculator"])
@@ -371,8 +371,8 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NS
     return nil;
 }
 
-static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool ui, bool use) {
-    return $pathForFile$inBundle$(file, [bundle bundleIdentifier], [[bundle bundlePath] lastPathComponent], ui, use);
+static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool use) {
+    return $pathForFile$inBundle$(file, [bundle bundleIdentifier], [[bundle bundlePath] lastPathComponent], use);
 }
 // }}}
 
@@ -472,7 +472,7 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
         if ([file hasPrefix:prefix]) {
             NSUInteger length([prefix length]);
             if (length != [file length])
-                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false, false))
+                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false))
                     return path;
         }
     }
@@ -653,7 +653,7 @@ MSHook(UIImage *, _UIApplicationImageWithName, NSString *name) {
     NSBundle *bundle = [NSBundle mainBundle];
     if (Debug_)
         NSLog(@"WB:Debug: _UIApplicationImageWithName(\"%@\", %@)", name, bundle);
-    if (NSString *path = $pathForFile$inBundle$(name, bundle, false, false))
+    if (NSString *path = $pathForFile$inBundle$(name, bundle, false))
         return CachedImageAtPath(path);
     return __UIApplicationImageWithName(name);
 }
@@ -683,7 +683,7 @@ MSInstanceMessageHook2(NSString *, NSBundle, pathForResource,ofType, NSString *,
         return MSOldCall(resource, type);
     if (Debug_)
         NSLog(@"WB:Debug: [NSBundle(%@) pathForResource:\"%@\"]", [self bundleIdentifier], file);
-    if (NSString *path = $pathForFile$inBundle$(file, self, false, false))
+    if (NSString *path = $pathForFile$inBundle$(file, self, false))
         return path;
     return MSOldCall(resource, type);
 }
@@ -1792,7 +1792,7 @@ MSInstanceMessageHook3(NSString *, NSBundle, localizedStringForKey,value,table, 
                 return value;
     } else if (NSString *path = $pathForFile$inBundle$([NSString stringWithFormat:@"%@.lproj/%@.strings",
         language, file
-    ], self, false, false)) {
+    ], self, false)) {
         if ((strings = [[NSDictionary alloc] initWithContentsOfFile:path]) != nil) {
             [Strings_ setObject:[strings autorelease] forKey:name];
             goto strings;
@@ -1992,7 +1992,7 @@ template <typename Original_>
 static UIImage *WBCacheUIImage(const Original_ &original, NSString *name, NSString *key) {
     if ([name rangeOfString:@"."].location == NSNotFound)
         name = [name stringByAppendingString:@".png"];
-    UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true, true); }, key));
+    UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true); }, key));
     if (image != nil && UIDebug_) {
         NSString *path([@"/tmp/UIImages/" stringByAppendingString:name]);
         if (![Manager_ fileExistsAtPath:path])
@@ -2124,7 +2124,7 @@ MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, NSDictionary **n
                     NSEnumerator *enumerator([*names keyEnumerator]);
                     while (NSString *name = [enumerator nextObject]) {
                         NSString *png([name stringByAppendingString:@".png"]);
-                        if (NSString *themed = $pathForFile$inBundle$(png, bundle, false, true)) {
+                        if (NSString *themed = $pathForFile$inBundle$(png, bundle, true)) {
                             NSUInteger index([[*names objectForKey:name] intValue]);
                             UIImage *image($getImage$(themed));
                             CGImageRef cg([image CGImage]);
