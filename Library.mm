@@ -433,7 +433,12 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
     NSString *path = [self path];
     NSString *folder = [path lastPathComponent];
     NSString *dname = [self displayName];
-    NSString *didentifier = [self displayIdentifier];
+
+    NSString *didentifier;
+    if ([self respondsToSelector:@selector(displayIdentifier)])
+        didentifier = [self displayIdentifier];
+    else
+        didentifier = nil;
 
     if (Debug_)
         NSLog(@"WB:Debug: [SBApplication(%@:%@:%@:%@) pathForIcon]", identifier, folder, dname, didentifier);
@@ -450,7 +455,7 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
         if (NSString *name = Name) \
             [names addObject:[NSString stringWithFormat:@"Icons%@/%@.png", suffix, name]];
 
-    if (![didentifier isEqualToString:identifier])
+    if (didentifier != nil && ![didentifier isEqualToString:identifier])
         testForIcon(didentifier);
 
     testForIcon(identifier);
