@@ -2193,10 +2193,17 @@ MSHook(bool, _Z24GetFileNameForThisActionmPcRb, unsigned long a0, char *a1, bool
     return GetFileNameForThisAction$(value, a0, a1, 0, a3);
 }
 
+#ifdef __LP64__
+MSHook(bool, _Z24GetFileNameForThisActionjPcjRb, unsigned int a0, char *a1, unsigned int a2, bool &a3) {
+    bool value(__Z24GetFileNameForThisActionjPcjRb(a0, a1, a2, a3));
+    return GetFileNameForThisAction$(value, a0, a1, a2, a3);
+}
+#else
 MSHook(bool, _Z24GetFileNameForThisActionmPcmRb, unsigned long a0, char *a1, unsigned long a2, bool &a3) {
     bool value(__Z24GetFileNameForThisActionmPcmRb(a0, a1, a2, a3));
     return GetFileNameForThisAction$(value, a0, a1, a2, a3);
 }
+#endif
 
 static void ChangeWallpaper(
     CFNotificationCenterRef center,
@@ -2531,9 +2538,16 @@ MSInitialize {
         msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
         MSHookFunction(_Z24GetFileNameForThisActionmPcRb, &$_Z24GetFileNameForThisActionmPcRb, &__Z24GetFileNameForThisActionmPcRb);
 
+#ifdef __LP64__
+        bool (*_Z24GetFileNameForThisActionjPcjRb)(unsigned int, char *, unsigned int, bool &);
+        msset(_Z24GetFileNameForThisActionjPcjRb, image, "__Z24GetFileNameForThisActionjPcjRb");
+        NSLog(@"WTH:%p", _Z24GetFileNameForThisActionjPcjRb);
+        MSHookFunction(_Z24GetFileNameForThisActionjPcjRb, &$_Z24GetFileNameForThisActionjPcjRb, &__Z24GetFileNameForThisActionjPcjRb);
+#else
         bool (*_Z24GetFileNameForThisActionmPcmRb)(unsigned long, char *, unsigned long, bool &);
         msset(_Z24GetFileNameForThisActionmPcmRb, image, "__Z24GetFileNameForThisActionmPcmRb");
         MSHookFunction(_Z24GetFileNameForThisActionmPcmRb, &$_Z24GetFileNameForThisActionmPcmRb, &__Z24GetFileNameForThisActionmPcmRb);
+#endif
     }
     // }}}
     // BackBoardServices {{{
