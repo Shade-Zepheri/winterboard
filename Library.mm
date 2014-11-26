@@ -103,6 +103,7 @@ Class $MPVideoView;
 MSClassHook(NSBundle)
 MSClassHook(NSString)
 
+MSClassHook(_UIAssetManager)
 MSClassHook(UIImage)
 MSMetaClassHook(UIImage)
 MSClassHook(UINavigationBar)
@@ -199,6 +200,11 @@ static bool Four_($SBDockIconListView != nil);
 
 @end
 
+@interface _UIAssetManager : NSObject
+- (NSBundle *) bundle;
+- (NSString *) carFileName;
+@end
+
 static BOOL (*_GSFontGetUseLegacyFontMetrics)();
 #define $GSFontGetUseLegacyFontMetrics() \
     (_GSFontGetUseLegacyFontMetrics == NULL ? YES : _GSFontGetUseLegacyFontMetrics())
@@ -211,8 +217,6 @@ static bool SpringBoard_;
 
 static UIImage *(*_UIApplicationImageWithName)(NSString *name);
 static UIImage *(*_UIImageWithNameInDomain)(NSString *name, NSString *domain);
-static UIImage *(*_UIImageWithNameUsingCurrentIdiom)(NSString *name);
-static UIImage *(*_UIImageWithDeviceSpecificName)(NSString *name);
 static NSBundle *(*_UIKitBundle)();
 
 static NSMutableDictionary *Images_ = [[NSMutableDictionary alloc] initWithCapacity:64];
@@ -225,6 +229,39 @@ static NSMutableArray *Themes_;
 
 static NSDictionary *English_;
 static NSMutableDictionary *Info_;
+
+// @interface WBBundle {{{
+@interface WBBundle : NSBundle {
+    NSString *identifier_;
+}
+
++ (WBBundle *) bundleWithIdentifier:(NSString *)identifier;
+
+@end
+
+@implementation WBBundle
+
+- (void) dealloc {
+    [identifier_ release];
+    return [super dealloc];
+}
+
++ (WBBundle *) bundleWithIdentifier:(NSString *)identifier {
+    return [[[self alloc] initWithIdentifier:identifier] autorelease];
+}
+
+- (id) initWithIdentifier:(NSString *)identifier {
+    if ((self = [super init]) != nil) {
+        identifier_ = [identifier retain];
+    } return self;
+}
+
+- (NSString *) bundleIdentifier {
+    return identifier_;
+}
+
+@end
+// }}}
 
 // $getTheme$() {{{
 static NSMutableDictionary *Themed_ = [[NSMutableDictionary alloc] initWithCapacity:128];
@@ -333,9 +370,8 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool use) {
+static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSBundle *bundle) {
     NSString *identifier = [bundle bundleIdentifier];
-    NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
 
     if (identifier != nil)
         [names addObject:[NSString stringWithFormat:@"Bundles/%@/%@", identifier, file]];
@@ -355,10 +391,14 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
     bool summer(SpringBoard_ && SummerBoard_);
 
     if (identifier == nil);
+    else if ([identifier isEqualToString:@"com.apple.uikit.Artwork"])
+        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.UIKit"]);
+    else if ([identifier isEqualToString:@"com.apple.uikit.LegacyArtwork"])
+        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.UIKit"]);
     else if ([identifier isEqualToString:@"com.apple.UIKit"])
         [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.chatkit"])
-        [names addObject:[NSString stringWithFormat:@"Bundles/com.apple.MobileSMS/%@", file]];
+        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.MobileSMS"]);
     else if ([identifier isEqualToString:@"com.apple.calculator"])
         [names addObject:[NSString stringWithFormat:@"Files/Applications/Calculator.app/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.Maps"] && [file isEqualToString:@"Icon-57@2x.png"])
@@ -367,12 +407,14 @@ static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool u
         remapResourceName(@"FSO_BG.png", @"StatusBar")
         remapResourceName(Four_ ? @"SBDockBG-old.png" : @"SBDockBG.png", @"Dock")
         remapResourceName(@"SBWeatherCelsius.png", @"Icons/Weather")
+}
 
+static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool use) {
+    NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
+    $pathForFile$inBundle$(names, file, bundle);
     [names addObject:[NSString stringWithFormat:@"Fallback/%@", file]];
-
     if (NSString *path = $getTheme$($useScale$(names, use)))
         return path;
-
     return nil;
 }
 // }}}
@@ -1997,17 +2039,24 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 // }}}
 
 template <typename Original_>
-static UIImage *WBCacheUIImage(const Original_ &original, NSString *name, NSString *key) {
-    if ([name rangeOfString:@"."].location == NSNotFound)
+static UIImage *WBCacheUIImage(NSBundle *bundle, const Original_ &original, NSString *name, NSString *key) {
+    if (name == nil)
+        return original();
+    NSUInteger period([name rangeOfString:@"."].location);
+    NSUInteger length([name length]);
+    if (period == NSNotFound || length < 4 || period > length - 4)
         name = [name stringByAppendingString:@".png"];
-    UIImage *image(WBCacheImage(original, [=](){ return $pathForFile$inBundle$(name, _UIKitBundle(), true); }, key));
-    if (image != nil && UIDebug_) {
-        NSString *path(@"/tmp/UIImages");
-        [Manager_ createDirectoryAtPath:path withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions: @0777} error:NULL];
-        path = [NSString stringWithFormat:@"%@/%@", path, name];
-        if (![Manager_ fileExistsAtPath:path])
-            [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
-    } return image;
+
+    return WBCacheImage([bundle, &original, name](){
+        UIImage *image(original());
+        if (image != nil && UIDebug_) {
+            NSString *path([@"/tmp/WBImages/" stringByAppendingString:[bundle bundleIdentifier]]);
+            [Manager_ createDirectoryAtPath:path withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions: @0777} error:NULL];
+            path = [NSString stringWithFormat:@"%@/%@", path, name];
+            if (![Manager_ fileExistsAtPath:path])
+                [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
+        } return image;
+    }, [=](){ return $pathForFile$inBundle$(name, bundle, true); }, key);
 }
 
 // %hook _UIImageWithName() {{{
@@ -2016,7 +2065,7 @@ MSHook(UIImage *, _UIImageWithName, NSString *name) {
         return nil;
     if (Debug_)
         NSLog(@"WB:Debug: _UIImageWithName(\"%@\")", name);
-    return WBCacheUIImage(
+    return WBCacheUIImage(_UIKitBundle(),
         [=](){ return __UIImageWithName(name); },
     name, [NSString stringWithFormat:@"I:%@", name]);
 }
@@ -2031,22 +2080,74 @@ MSHook(UIImage *, _UIImageWithNameInDomain, NSString *name, NSString *domain) {
     [NSString stringWithFormat:@"D:%zu:%@%@", size_t([domain length]), domain, name]);
 }
 // }}}
-// %hook _UIImageWithDeviceUsingCurrentIdiom() {{{
-MSHook(UIImage *, _UIImageWithNameUsingCurrentIdiom, NSString *name) {
+
+// UISharedArtwork (iOS 6) {{{
+MSInstanceMessageHook2(UISharedArtwork *, UISharedArtwork, initWithName,inBundle, NSString *, name, NSBundle *, bundle) {
+    if ((self = MSOldCall(name, bundle)) != nil) {
+        $objc_setAssociatedObject(self, @selector(wb$bundle), bundle, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } return self;
+}
+
+MSInstanceMessageHook2(UIImage *, UISharedArtwork, imageNamed,device, NSString *, name, NSInteger, device) {
+    NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
     if (Debug_)
-        NSLog(@"WB:Debug: _UIImageWithNameUsingCurrentIdiom(\"%@\")", name);
-    return WBCacheUIImage(
-        [=](){ return __UIImageWithNameUsingCurrentIdiom(name); },
-    name, [NSString stringWithFormat:@"I:%@", name]);
+        NSLog(@"WB:Debug: -[UISharedArtwork(%@) imageNamed:@\"%@\" device:%li]", [bundle bundleIdentifier], name, (long) device);
+    return WBCacheUIImage(bundle,
+        [=](){ return MSOldCall(name, device); },
+    name, [NSString stringWithFormat:@"M:%p:%@:%li", self, name, (long) device]);
 }
 // }}}
-// %hook _UIImageWithDeviceSpecificName() {{{
-MSHook(UIImage *, _UIImageWithDeviceSpecificName, NSString *name) {
+// _UIAssetManager (iOS 7) {{{
+MSInstanceMessageHook3(_UIAssetManager *, _UIAssetManager, initWithName,inBundle,idiom, NSString *, name, NSBundle *, bundle, NSInteger, idiom) {
+    if ((self = MSOldCall(name, bundle, idiom)) != nil) {
+        $objc_setAssociatedObject(self, @selector(wb$bundle), bundle, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } return self;
+}
+
+MSInstanceMessageHook5(UIImage *, _UIAssetManager, imageNamed,scale,idiom,subtype,cachingOptions, NSString *, name, CGFloat, scale, NSInteger, idiom, NSUInteger, subtype, NSUInteger, caching) {
+    NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
     if (Debug_)
-        NSLog(@"WB:Debug: _UIImageWithDeviceSpecificName(\"%@\")", name);
-    return WBCacheUIImage(
-        [=](){ return __UIImageWithDeviceSpecificName(name); },
-    name, [NSString stringWithFormat:@"S:%@", name]);
+        NSLog(@"WB:Debug: -[_UIAssetManager(%@/%@) imageNamed:@\"%@\" scale:%g idiom:%li subtype:%lu cachingOptions:%lu]",
+            [bundle bundleIdentifier], [self carFileName],
+            name, scale, (long) idiom,
+            (unsigned long) subtype,
+            (unsigned long) caching
+        );
+
+    if (bundle == _UIKitBundle()) {
+        NSString *name([self carFileName]);
+        if (false);
+        else if ([name isEqualToString:@"UIKit_NewArtwork"])
+            bundle = [WBBundle bundleWithIdentifier:@"com.apple.uikit.Artwork"];
+        else if ([name isEqualToString:@"UIKit_OriginalArtwork"])
+            bundle = [WBBundle bundleWithIdentifier:@"com.apple.uikit.LegacyArtwork"];
+    }
+
+    return WBCacheUIImage(bundle,
+        [=](){ return MSOldCall(name, scale, idiom, subtype, caching); },
+    name, [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu", self, name, scale, (long) idiom, (unsigned long) subtype]);
+}
+// }}}
+// _UIAssetManager (iOS 8) {{{
+struct SizeClassPair {
+    NSInteger first;
+    NSInteger second;
+};
+
+MSInstanceMessageHook7(UIImage *, _UIAssetManager, imageNamed,scale,idiom,subtype,cachingOptions,sizeClassPair,attachCatalogImage, NSString *, name, CGFloat, scale, NSInteger, idiom, NSUInteger, subtype, NSUInteger, caching, SizeClassPair, size, BOOL, attach) {
+    NSBundle *bundle([self bundle]);
+    if (Debug_)
+        NSLog(@"WB:Debug: -[_UIAssetManager(%@/%@) imageNamed:@\"%@\" scale:%g idiom:%li subtype:%lu cachingOptions:%lu sizeClassPair:[%li %li] attachCatalogImage:%s]",
+            [bundle bundleIdentifier], [self carFileName],
+            name, scale, (long) idiom,
+            (unsigned long) subtype,
+            (unsigned long) caching,
+            (long) size.first, (long) size.second,
+            attach ? "YES" : "NO"
+        );
+    return WBCacheUIImage(bundle,
+        [=](){ return MSOldCall(name, scale, idiom, subtype, caching, size, attach); },
+    name, [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu:%li:%li:%c", self, name, scale, (long) idiom, (unsigned long) subtype, (long) size.first, (long) size.second, attach ? 'Y' : 'N']);
 }
 // }}}
 
@@ -2475,19 +2576,14 @@ MSInitialize {
 
         WBHookSymbol(image, _UIKitBundle);
 
-        MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
+        if (kCFCoreFoundationVersionNumber < 700)
+            MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
 
         WBHookSymbol(image, _UIApplicationImageWithName);
         MSHookFunction(_UIApplicationImageWithName, MSHake(_UIApplicationImageWithName));
 
         WBHookSymbol(image, _UIImageWithNameInDomain);
         MSHookFunction(_UIImageWithNameInDomain, MSHake(_UIImageWithNameInDomain));
-
-        WBHookSymbol(image, _UIImageWithNameUsingCurrentIdiom);
-        MSHookFunction(_UIImageWithNameUsingCurrentIdiom, MSHake(_UIImageWithNameUsingCurrentIdiom));
-
-        WBHookSymbol(image, _UIImageWithDeviceSpecificName);
-        MSHookFunction(_UIImageWithDeviceSpecificName, MSHake(_UIImageWithDeviceSpecificName));
 
         SEL includeEmoji(@selector(_legacy_drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:));
         if (![@"" respondsToSelector:includeEmoji])
