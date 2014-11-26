@@ -400,7 +400,7 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSStri
     else if ([identifier isEqualToString:@"com.apple.calculator"])
         [names addObject:[NSString stringWithFormat:@"Files/Applications/Calculator.app/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.Maps"] && [file isEqualToString:@"Icon-57@2x.png"])
-        [names addObject:[NSString stringWithFormat:@"Bundles/com.apple.Maps/icon.png"]];
+        $pathForFile$inBundle$(names, @"icon.png", identifier, folder);
     else if (!summer);
         remapResourceName(@"FSO_BG.png", @"StatusBar")
         remapResourceName(Four_ ? @"SBDockBG-old.png" : @"SBDockBG.png", @"Dock")
