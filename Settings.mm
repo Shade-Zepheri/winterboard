@@ -67,6 +67,42 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
     }
 }
 
+static void RestartSpringBoard() {
+    unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons");
+    unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons.plist");
+    unlink("/User/Library/Caches/com.apple.springboard-imagecache-smallicons");
+    unlink("/User/Library/Caches/com.apple.springboard-imagecache-smallicons.plist");
+
+    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen");
+    unlink("/User/Library/Caches/com.apple.SpringBoard.notificationCenterLinen");
+
+    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.0");
+    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.1");
+    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.2");
+    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.3");
+
+    system("rm -rf /User/Library/Caches/SpringBoardIconCache");
+    system("rm -rf /User/Library/Caches/SpringBoardIconCache-small");
+    system("rm -rf /User/Library/Caches/com.apple.IconsCache");
+    system("rm -rf /User/Library/Caches/com.apple.newsstand");
+    system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
+    system("rm -rf /User/Library/Caches/com.apple.UIStatusBar");
+
+    system("rm -rf /User/Library/Caches/BarDialer");
+    system("rm -rf /User/Library/Caches/BarDialer_selected");
+    system("rm -rf /User/Library/Caches/BarRecents");
+    system("rm -rf /User/Library/Caches/BarRecents_selected");
+    system("rm -rf /User/Library/Caches/BarVM");
+    system("rm -rf /User/Library/Caches/BarVM_selected");
+
+    system("killall -9 lsd");
+
+    if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
+        system("killall backboardd");
+    else
+        system("killall SpringBoard");
+}
+
 /* [NSObject yieldToSelector:(withObject:)] {{{*/
 @interface NSObject (wb$yieldToSelector)
 - (id) wb$yieldToSelector:(SEL)selector withObject:(id)object;
@@ -411,6 +447,10 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
     return plistValue;
 }
 
+- (void) restartSpringBoard {
+    RestartSpringBoard();
+}
+
 - (void) __optimizeThemes {
     system("/usr/libexec/winterboard/Optimize");
 }
@@ -523,39 +563,7 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
     if (![data writeToFile:_plist options:NSAtomicWrite error:NULL])
         return;
 
-    unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons");
-    unlink("/User/Library/Caches/com.apple.springboard-imagecache-icons.plist");
-    unlink("/User/Library/Caches/com.apple.springboard-imagecache-smallicons");
-    unlink("/User/Library/Caches/com.apple.springboard-imagecache-smallicons.plist");
-
-    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen");
-    unlink("/User/Library/Caches/com.apple.SpringBoard.notificationCenterLinen");
-
-    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.0");
-    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.1");
-    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.2");
-    unlink("/User/Library/Caches/com.apple.SpringBoard.folderSwitcherLinen.3");
-
-    system("rm -rf /User/Library/Caches/SpringBoardIconCache");
-    system("rm -rf /User/Library/Caches/SpringBoardIconCache-small");
-    system("rm -rf /User/Library/Caches/com.apple.IconsCache");
-    system("rm -rf /User/Library/Caches/com.apple.newsstand");
-    system("rm -rf /User/Library/Caches/com.apple.springboard.sharedimagecache");
-    system("rm -rf /User/Library/Caches/com.apple.UIStatusBar");
-
-    system("rm -rf /User/Library/Caches/BarDialer");
-    system("rm -rf /User/Library/Caches/BarDialer_selected");
-    system("rm -rf /User/Library/Caches/BarRecents");
-    system("rm -rf /User/Library/Caches/BarRecents_selected");
-    system("rm -rf /User/Library/Caches/BarVM");
-    system("rm -rf /User/Library/Caches/BarVM_selected");
-
-    system("killall -9 lsd");
-
-    if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
-        system("killall backboardd");
-    else
-        system("killall SpringBoard");
+    RestartSpringBoard();
 }
 
 - (void) cancelChanges {

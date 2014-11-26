@@ -140,6 +140,50 @@
 				</dict>
 			</array>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>When WinterBoard restarts SpringBoard it also clears many icon and image caches.</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>restartSpringBoard</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Restart SpringBoard</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>isStaticText</key>
+			<string>true</string>
+			<key>requiredCapabilities</key>
+			<array>
+				<dict>
+					<key>wildcat</key>
+					<false/>
+					<key>voip</key>
+					<false/>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSTitleValueCell</string>
+			<key>label</key>
+			<string>When WinterBoard restarts SpringBoard it also clears many icon and image caches.</string>
+			<key>requiredCapabilities</key>
+			<array>
+				<dict>
+					<key>wildcat</key>
+					<false/>
+					<key>voip</key>
+					<false/>
+				</dict>
+			</array>
+		</dict>
 	</array>
 	<key>title</key>
 	<string>Advanced</string>
