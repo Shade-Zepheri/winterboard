@@ -28,6 +28,7 @@
 #import <Preferences/PSTableCell.h>
 #import <UIKit/UINavigationButton.h>
 
+#include <cmath>
 #include <dlfcn.h>
 #include <objc/runtime.h>
 
@@ -139,23 +140,55 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
 
 /* Theme Settings Controller {{{ */
 @interface WBSThemesTableViewCell : UITableViewCell {
+    UIImageView *checkmark_;
+    UIImageView *icon_;
+    UILabel *name_;
 }
 
 @end
 
 @implementation WBSThemesTableViewCell
 
+- (void) dealloc {
+    [super dealloc];
+    [checkmark_ release];
+    [icon_ release];
+    [name_ release];
+}
+
 - (id) initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuse {
     if ((self = [super initWithFrame:frame reuseIdentifier:reuse]) != nil) {
+        CGFloat border(48), check(40), icon(64);
+        UIView *content([self contentView]);
+        CGSize size([content frame].size);
+
+        checkmark_ = [[UIImageView alloc] initWithFrame:CGRectMake(std::floor((border - check) / 2), 0, check, size.height)];
+        [checkmark_ setAutoresizingMask:UIViewAutoresizingFlexibleHeight];
+        [content addSubview:checkmark_];
+
+        name_ = [[UILabel alloc] initWithFrame:CGRectMake(border, 0, 0, size.height)];
+        [name_ setAutoresizingMask:(UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight)];
+        [content addSubview:name_];
+
+        icon_ = [[UIImageView alloc] initWithFrame:CGRectMake(size.width - icon - 48, 0, icon, icon)];
+        [content addSubview:icon_];
     } return self;
 }
 
+- (void) setCheck:(bool)inactive {
+    [self setImage:(inactive ? uncheckedImage : checkImage)];
+}
+
 - (void) setTheme:(NSDictionary *)theme {
-    self.text = [theme objectForKey:@"Name"];
-    self.hidesAccessoryWhenEditing = NO;
+    [name_ setText:[theme objectForKey:@"Name"]];
+
     NSNumber *active([theme objectForKey:@"Active"]);
     BOOL inactive(active == nil || ![active boolValue]);
-    [self setImage:(inactive ? uncheckedImage : checkImage)];
+    [self setCheck:inactive];
+
+    CGRect area([name_ frame]);
+    area.size.width = ([icon_ image] == nil ? self.contentView.frame.size.width : icon_.frame.origin.x) - area.origin.x - 9;
+    [name_ setFrame:area];
 }
 
 @end
@@ -247,7 +280,8 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
             nil] atIndex:0];
         }
 
-        _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64) style:UITableViewStyleGrouped];
+        _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64) style:UITableViewStylePlain];
+        [_tableView setRowHeight:48];
         [_tableView setDataSource:self];
         [_tableView setDelegate:self];
         [_tableView setEditing:YES];

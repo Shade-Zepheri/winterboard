@@ -8,7 +8,7 @@ clean:
 	rm -f WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
 
 WinterBoardSettings: Settings.mm makefile
-	$(cycc) -dynamiclib \
+	$(cycc) -std=c++11 -dynamiclib \
 	    -framework UIKit \
 	    -framework CoreFoundation \
 	    -framework Foundation \
