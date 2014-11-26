@@ -150,10 +150,10 @@ void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
 @implementation WBSThemesTableViewCell
 
 - (void) dealloc {
-    [super dealloc];
     [checkmark_ release];
     [icon_ release];
     [name_ release];
+    [super dealloc];
 }
 
 - (id) initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuse {
