@@ -390,13 +390,13 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSStri
 
     if (identifier == nil);
     else if ([identifier isEqualToString:@"com.apple.uikit.Artwork"])
-        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", nil);
+        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", @"UIKit.framework");
     else if ([identifier isEqualToString:@"com.apple.uikit.LegacyArtwork"])
-        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", nil);
+        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", @"UIKit.framework");
     else if ([identifier isEqualToString:@"com.apple.UIKit"])
         [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.chatkit"])
-        $pathForFile$inBundle$(names, file, @"com.apple.MobileSMS", nil);
+        $pathForFile$inBundle$(names, file, @"com.apple.MobileSMS", @"MobileSMS.app");
     else if ([identifier isEqualToString:@"com.apple.calculator"])
         [names addObject:[NSString stringWithFormat:@"Files/Applications/Calculator.app/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.Maps"] && [file isEqualToString:@"Icon-57@2x.png"])
