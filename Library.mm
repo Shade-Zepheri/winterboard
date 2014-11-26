@@ -370,10 +370,10 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSString *identifier, NSURL *url) {
+static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSString *identifier, NSString *folder) {
     if (identifier != nil)
         [names addObject:[NSString stringWithFormat:@"Bundles/%@/%@", identifier, file]];
-    if (NSString *folder = [url lastPathComponent]) {
+    if (folder != nil) {
         [names addObject:[NSString stringWithFormat:@"Folders/%@/%@", folder, file]];
         NSString *base([folder stringByDeletingPathExtension]);
         if ([base hasSuffix:@"~iphone"])
@@ -409,7 +409,7 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSStri
 
 static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NSURL *url, bool use) {
     NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
-    $pathForFile$inBundle$(names, file, identifier, url);
+    $pathForFile$inBundle$(names, file, identifier, [url lastPathComponent]);
     [names addObject:[NSString stringWithFormat:@"Fallback/%@", file]];
     if (NSString *path = $getTheme$($useScale$(names, use)))
         return path;
