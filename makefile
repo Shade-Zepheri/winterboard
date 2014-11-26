@@ -28,15 +28,6 @@ WinterBoard.dylib: Library.mm WBMarkup.mm WBMarkup.h makefile ../substrate/subst
 	    -framework WebKit \
 	    -lobjc $(substrate)
 
-WinterBoard: Application.mm makefile
-	$(cycc) \
-	    -framework UIKit \
-	    -framework Foundation \
-	    -framework CoreFoundation \
-	    -framework CoreGraphics \
-	    -framework Preferences \
-	    -lobjc
-
 Optimize: Optimize.cpp makefile
 	$(cycc) $(filter %.cpp,$^)
 
