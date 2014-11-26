@@ -370,12 +370,10 @@ static NSString *$getTheme$(NSArray *files, NSArray *themes = Themes_) {
 }
 // }}}
 // $pathForFile$inBundle$() {{{
-static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSBundle *bundle) {
-    NSString *identifier = [bundle bundleIdentifier];
-
+static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSString *identifier, NSURL *url) {
     if (identifier != nil)
         [names addObject:[NSString stringWithFormat:@"Bundles/%@/%@", identifier, file]];
-    if (NSString *folder = [[bundle bundlePath] lastPathComponent]) {
+    if (NSString *folder = [url lastPathComponent]) {
         [names addObject:[NSString stringWithFormat:@"Folders/%@/%@", folder, file]];
         NSString *base([folder stringByDeletingPathExtension]);
         if ([base hasSuffix:@"~iphone"])
@@ -392,13 +390,13 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSBund
 
     if (identifier == nil);
     else if ([identifier isEqualToString:@"com.apple.uikit.Artwork"])
-        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.UIKit"]);
+        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", nil);
     else if ([identifier isEqualToString:@"com.apple.uikit.LegacyArtwork"])
-        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.UIKit"]);
+        $pathForFile$inBundle$(names, file, @"com.apple.UIKit", nil);
     else if ([identifier isEqualToString:@"com.apple.UIKit"])
         [names addObject:[NSString stringWithFormat:@"UIImages/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.chatkit"])
-        $pathForFile$inBundle$(names, file, [WBBundle bundleWithIdentifier:@"com.apple.MobileSMS"]);
+        $pathForFile$inBundle$(names, file, @"com.apple.MobileSMS", nil);
     else if ([identifier isEqualToString:@"com.apple.calculator"])
         [names addObject:[NSString stringWithFormat:@"Files/Applications/Calculator.app/%@", file]];
     else if ([identifier isEqualToString:@"com.apple.Maps"] && [file isEqualToString:@"Icon-57@2x.png"])
@@ -409,13 +407,24 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSBund
         remapResourceName(@"SBWeatherCelsius.png", @"Icons/Weather")
 }
 
-static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool use) {
+static NSString *$pathForFile$inBundle$(NSString *file, NSString *identifier, NSURL *url, bool use) {
     NSMutableArray *names = [NSMutableArray arrayWithCapacity:8];
-    $pathForFile$inBundle$(names, file, bundle);
+    $pathForFile$inBundle$(names, file, identifier, url);
     [names addObject:[NSString stringWithFormat:@"Fallback/%@", file]];
     if (NSString *path = $getTheme$($useScale$(names, use)))
         return path;
     return nil;
+}
+
+// XXX: this cannot be merged due to WBBundle
+static NSString *$pathForFile$inBundle$(NSString *file, NSBundle *bundle, bool use) {
+    return $pathForFile$inBundle$(file, [bundle bundleIdentifier], [bundle bundleURL], use);
+}
+
+static NSString *$pathForFile$inBundle$(NSString *file, CFBundleRef bundle, bool use) {
+    NSString *identifier((NSString *) CFBundleGetIdentifier(bundle));
+    NSURL *url([(NSURL *) CFBundleCopyBundleURL(bundle) autorelease]);
+    return $pathForFile$inBundle$(file, identifier, url, use);
 }
 // }}}
 
@@ -726,16 +735,19 @@ MSHook(UIImage *, _UIApplicationImageWithName, NSString *name) {
             NSLog(@"WB:Error: [%s forwardInvocation:(%s)]", class_getName([self class]), sel_getName(sel)); \
     }
 
-// %hook -[NSBundle pathForResource:ofType:] {{{
-MSInstanceMessageHook2(NSString *, NSBundle, pathForResource,ofType, NSString *, resource, NSString *, type) {
-    NSString *file = type == nil ? resource : [NSString stringWithFormat:@"%@.%@", resource, type];
-    if ([file isEqualToString:@"Info.plist"])
-        return MSOldCall(resource, type);
+// %hook CFBundleCopyResourceURL {{{
+MSHook(CFURLRef, CFBundleCopyResourceURL, CFBundleRef bundle, CFStringRef resourceName, CFStringRef resourceType, CFStringRef subDirName) {
+    NSString *file((NSString *) resourceName);
+    if (resourceType != NULL)
+        file = [NSString stringWithFormat:@"%@.%@", file, resourceType];
+    if (subDirName != NULL)
+        file = [NSString stringWithFormat:@"%@/%@", subDirName, resourceType];
+
     if (Debug_)
-        NSLog(@"WB:Debug: [NSBundle(%@) pathForResource:\"%@\"]", [self bundleIdentifier], file);
-    if (NSString *path = $pathForFile$inBundle$(file, self, false))
-        return path;
-    return MSOldCall(resource, type);
+        NSLog(@"WB:Debug: CFBundleCopyResourceURL(<%@>, \"%@\", \"%@\", \"%@\")", CFBundleGetIdentifier(bundle), resourceName, resourceType, subDirName);
+    if (NSString *path = $pathForFile$inBundle$(file, bundle, false))
+        return (CFURLRef) [[NSURL alloc] initFileURLWithPath:path];
+    return _CFBundleCopyResourceURL(bundle, resourceName, resourceType, subDirName);
 }
 // }}}
 
@@ -2508,6 +2520,11 @@ MSInitialize {
         void (*BKSDisplayServicesSetSystemAppExitedImagePath)(NSString *path);
         msset(BKSDisplayServicesSetSystemAppExitedImagePath, image, "_BKSDisplayServicesSetSystemAppExitedImagePath");
         MSHookFunction(BKSDisplayServicesSetSystemAppExitedImagePath, MSHake(BKSDisplayServicesSetSystemAppExitedImagePath));
+    }
+    // }}}
+    // Foundation {{{
+    if (true) {
+        MSHookFunction(CFBundleCopyResourceURL, MSHake(CFBundleCopyResourceURL));
     }
     // }}}
     // GraphicsServices {{{
