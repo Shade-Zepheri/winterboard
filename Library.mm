@@ -2430,7 +2430,7 @@ static void SBInitialize() {
     no = true;
 
     if (strstr(path, "/icon") != NULL)
-        MSHookProcess(-1, "");
+        *reinterpret_cast<void *volatile *>(NULL) = NULL;
 
     if (fd == -1 && errno == EFAULT)
         NSLog(@"open(%p, %#x, %#o) = %d\n", path, oflag, mode, fd);
