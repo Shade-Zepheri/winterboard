@@ -243,7 +243,11 @@ static unsigned $getScale$(NSString *path) {
     StripName("~iphone");
     StripName("~ipad");
 
-    return [name hasSuffix:@"@2x"] ? 2 : 1;
+    if ([name hasSuffix:@"@3x"])
+        return 3;
+    if ([name hasSuffix:@"@2x"])
+        return 2;
+    return 1;
 }
 
 static NSArray *$useScale$(NSArray *files, bool use = true) {
@@ -264,16 +268,16 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
         NSString *extension([file pathExtension]);
 
         if (use) {
-            if (Scale_ == 2) {
-                [scaled addObject:[NSString stringWithFormat:@"%@@2x~%@.%@", base, idiom, extension]];
-                [scaled addObject:[NSString stringWithFormat:@"%@@2x.%@", base, extension]];
+            for (unsigned scale(2); scale <= Scale_; ++scale) {
+                [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, scale, idiom, extension]];
+                [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, scale, extension]];
             }
 
             [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
 
             // if (!IsWild_) <- support old themes
             [scaled addObject:file];
-        } else if ([base hasSuffix: @"@2x"]) {
+        } else if ([base hasSuffix: @"@2x"] || [base hasSuffix:@"@3x"]) {
             [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
             [scaled addObject:file];
 
@@ -2436,7 +2440,7 @@ MSInitialize {
     // }}}
     // SpringBoard {{{
     if (SpringBoard_) {
-        Wallpapers_ = [[NSArray arrayWithObjects:@"Wallpaper.mp4", @"Wallpaper@2x.png", @"Wallpaper@2x.jpg", @"Wallpaper.png", @"Wallpaper.jpg", @"Wallpaper.html", nil] retain];
+        Wallpapers_ = [[NSArray arrayWithObjects:@"Wallpaper.mp4", @"Wallpaper@3x.png", @"Wallpaper@3x.jpg", @"Wallpaper@2x.png", @"Wallpaper@2x.jpg", @"Wallpaper.png", @"Wallpaper.jpg", @"Wallpaper.html", nil] retain];
         Papered_ = $getTheme$(Wallpapers_) != nil;
         Docked_ = $getTheme$([NSArray arrayWithObjects:@"Dock.png", nil]) != nil;
 
