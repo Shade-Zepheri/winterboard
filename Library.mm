@@ -2231,33 +2231,48 @@ static void ChangeWallpaper(
 
 }
 
-MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, NSDictionary **names, void *arg2, void *arg3) {
+MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, CFTypeRef *names, void *arg2, void *arg3) {
     NSArray *images(_CPBitmapCreateImagesFromPath(path, names, arg2, arg3));
-    if (images != NULL && *names != nil && CFGetTypeID((CFTypeRef) *names) == CFDictionaryGetTypeID()) {
-        if (NSBundle *bundle = [NSBundle wb$bundleWithFile:path]) {
-            NSMutableArray *copy([images mutableCopy]);
-            [images release];
-            images = copy;
+    if (images == nil)
+        return nil;
+    if (*names == nil)
+        return images;
 
-            NSString *file([path stringByResolvingSymlinksInPath]);
-            NSString *prefix([[bundle bundlePath] stringByResolvingSymlinksInPath]);
-            if ([file hasPrefix:prefix]) {
-                NSUInteger length([prefix length]);
-                if (length != [file length]) {
-                    NSEnumerator *enumerator([*names keyEnumerator]);
-                    while (NSString *name = [enumerator nextObject]) {
-                        NSString *png([name stringByAppendingString:@".png"]);
-                        if (NSString *themed = $pathForFile$inBundle$(png, bundle, true)) {
-                            NSUInteger index([[*names objectForKey:name] intValue]);
-                            UIImage *image($getImage$(themed));
-                            CGImageRef cg([image CGImage]);
-                            [copy replaceObjectAtIndex:index withObject:(id)cg];
-                        }
-                    }
-                }
-            }
+    NSBundle *bundle([NSBundle wb$bundleWithFile:path]);
+    if (bundle == nil)
+        return images;
+
+    NSString *file([path stringByResolvingSymlinksInPath]);
+    NSString *prefix([[bundle bundlePath] stringByResolvingSymlinksInPath]);
+    // XXX: why do I care about this?
+    if (![file hasPrefix:prefix])
+        return images;
+
+    NSMutableArray *copy([images mutableCopy]);
+    [images release];
+    images = copy;
+
+    NSDictionary *indexes;
+    NSEnumerator *enumerator;
+
+    if (CFGetTypeID((CFTypeRef) *names) == CFDictionaryGetTypeID()) {
+        indexes = (NSDictionary *) *names;
+        enumerator = [indexes keyEnumerator];
+    } else {
+        indexes = nil;
+        enumerator = [(NSArray *) *names objectEnumerator];
+    }
+
+    for (NSUInteger index(0); NSString *name = [enumerator nextObject]; ++index)
+        if (NSString *themed = $pathForFile$inBundle$([name stringByAppendingString:@".png"], bundle, true)) {
+            if (indexes != nil)
+                index = [[indexes objectForKey:name] intValue];
+            UIImage *image($getImage$(themed));
+            CGImageRef cg([image CGImage]);
+            [copy replaceObjectAtIndex:index withObject:(id)cg];
         }
-    } return images;
+
+    return images;
 }
 
 MSHook(void, BKSDisplayServicesSetSystemAppExitedImagePath, NSString *path) {
@@ -2499,7 +2514,7 @@ MSInitialize {
 
     // AppSupport {{{
     if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/AppSupport.framework/AppSupport")) {
-        NSArray *(*CPBitmapCreateImagesFromPath)(NSString *, NSDictionary **, void *, void *);
+        NSArray *(*CPBitmapCreateImagesFromPath)(NSString *, CFTypeRef *, void *, void *);
         msset(CPBitmapCreateImagesFromPath, image, "_CPBitmapCreateImagesFromPath");
         MSHookFunction(CPBitmapCreateImagesFromPath, MSHake(CPBitmapCreateImagesFromPath));
     }
