@@ -98,7 +98,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>All UIImages that are not themed will be saved as PNGs into /tmp/UIImages.</string>
+			<string>All packed/shared images that are not themed will be saved as PNGs into /tmp/WBImages.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -108,7 +108,7 @@
 			<key>key</key>
 			<string>RecordUI</string>
 			<key>label</key>
-			<string>Record UIImages</string>
+			<string>Record Images</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -129,7 +129,7 @@
 			<key>cell</key>
 			<string>PSTitleValueCell</string>
 			<key>label</key>
-			<string>All UIImages that are not themed will be saved as PNGs into /tmp/UIImages.</string>
+			<string>All packed/shared images that are not themed will be saved as PNGs into /tmp/WBImages.</string>
 			<key>requiredCapabilities</key>
 			<array>
 				<dict>
