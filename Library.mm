@@ -1273,20 +1273,6 @@ MSInstanceMessageHook0(id, SBUIController, init) {
     if (paper != nil)
         paper = [paper stringByDeletingLastPathComponent];
 
-    {
-        size_t size;
-        sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-        char *machine = new char[size];
-
-        if (sysctlbyname("hw.machine", machine, &size, NULL, 0) == -1) {
-            perror("sysctlbyname(\"hw.machine\", ?)");
-            delete [] machine;
-            machine = NULL;
-        }
-
-        IsWild_ = machine != NULL && strncmp(machine, "iPad", 4) == 0;
-    }
-
     if (Debug_)
         NSLog(@"WB:Debug:Info = %@", [Info_ description]);
 
@@ -2461,6 +2447,19 @@ MSInitialize {
 
     dlset(_GSFontGetUseLegacyFontMetrics, "GSFontGetUseLegacyFontMetrics");
 
+    // Initialize IsWild_ {{{
+    size_t size;
+    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
+    char *machine = new char[size];
+
+    if (sysctlbyname("hw.machine", machine, &size, NULL, 0) == -1) {
+        perror("sysctlbyname(\"hw.machine\", ?)");
+        delete [] machine;
+        machine = NULL;
+    }
+
+    IsWild_ = machine != NULL && strncmp(machine, "iPad", 4) == 0;
+    // }}}
     // Load Settings.plist {{{
     if (NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/User/Library/Preferences/com.saurik.WinterBoard.plist"]]) {
         if (kCFCoreFoundationVersionNumber >= 1000)
