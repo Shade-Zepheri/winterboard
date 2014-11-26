@@ -38,6 +38,7 @@ cp -a Icon-Small.png package/System/Library/PreferenceBundles/WinterBoardSetting
 cp -a Icon-Small@2x.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon@2x.png
 cp -a Icon-Small7.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon7.png
 cp -a Icon-Small7@2x.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon7@2x.png
+cp -a Icon-Small7@3x.png package/System/Library/PreferenceBundles/WinterBoardSettings.bundle/icon7@3x.png
 cp -a SearchResultsCheckmarkClear.png WinterBoardSettings package/System/Library/PreferenceBundles/WinterBoardSettings.bundle
 ln -s /Applications/WinterBoard.app/WinterBoard.dylib package/Library/MobileSubstrate/DynamicLibraries
 cp -a WinterBoard.plist package/Library/MobileSubstrate/DynamicLibraries
@@ -45,7 +46,7 @@ cp -a *.theme package/Library/Themes
 find package -name .svn | while read -r line; do rm -rf "${line}"; done
 cp -a extrainst_ preinst prerm package/DEBIAN
 sed -e "s/VERSION/$(./version.sh)/g" control >package/DEBIAN/control
-cp -a Test.sh Default-568h@2x.png Icon-Small.png icon{,-72,@2x}.png icon7{,@2x}{,~ipad}.png WinterBoard.dylib WinterBoard Info.plist package/Applications/WinterBoard.app
+cp -a Test.sh Default-568h@2x.png Icon-Small.png icon{,-72,@2x}.png icon7{{,@2x}{,~ipad},@3x}.png WinterBoard.dylib WinterBoard Info.plist package/Applications/WinterBoard.app
 chown -R 0:0 package
 file="winterboard_$(grep ^Version: package/DEBIAN/control | cut -d ' ' -f 2)_iphoneos-arm.deb"; echo "$file"; ln -sf "$file" winterboard.deb
 dpkg-deb -Zlzma -b package winterboard.deb

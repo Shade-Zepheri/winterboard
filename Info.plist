@@ -58,6 +58,8 @@
 
         <string>icon7.png</string>
         <string>icon7@2x.png</string>
+        <string>icon7@3x.png</string>
+
         <string>icon7~ipad.png</string>
         <string>icon7@2x~ipad.png</string>
     </array>
