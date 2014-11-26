@@ -2463,7 +2463,9 @@ MSInitialize {
 
     // Load Settings.plist {{{
     if (NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/User/Library/Preferences/com.saurik.WinterBoard.plist"]]) {
-        if (NSNumber *value = [settings objectForKey:@"SummerBoard"])
+        if (kCFCoreFoundationVersionNumber >= 1000)
+            SummerBoard_ = false;
+        else if (NSNumber *value = [settings objectForKey:@"SummerBoard"])
             SummerBoard_ = [value boolValue];
         else
             SummerBoard_ = true;
