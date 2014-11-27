@@ -2265,9 +2265,8 @@ MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, CFTypeRef *names
         if (NSString *themed = $pathForFile$inBundle$([name stringByAppendingString:@".png"], bundle, true)) {
             if (indexes != nil)
                 index = [[indexes objectForKey:name] intValue];
-            UIImage *image($getImage$(themed));
-            CGImageRef cg([image CGImage]);
-            [copy replaceObjectAtIndex:index withObject:(id)cg];
+            if (UIImage *image = $getImage$(themed))
+                [copy replaceObjectAtIndex:index withObject:(id)[image CGImage]];
         }
 
     return images;
