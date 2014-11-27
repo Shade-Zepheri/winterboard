@@ -2541,7 +2541,6 @@ MSInitialize {
 #ifdef __LP64__
         bool (*_Z24GetFileNameForThisActionjPcjRb)(unsigned int, char *, unsigned int, bool &);
         msset(_Z24GetFileNameForThisActionjPcjRb, image, "__Z24GetFileNameForThisActionjPcjRb");
-        NSLog(@"WTH:%p", _Z24GetFileNameForThisActionjPcjRb);
         MSHookFunction(_Z24GetFileNameForThisActionjPcjRb, &$_Z24GetFileNameForThisActionjPcjRb, &__Z24GetFileNameForThisActionjPcjRb);
 #else
         bool (*_Z24GetFileNameForThisActionmPcmRb)(unsigned long, char *, unsigned long, bool &);
