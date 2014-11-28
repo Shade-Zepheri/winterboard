@@ -384,7 +384,7 @@ static void $pathForFile$inBundle$(NSMutableArray *names, NSString *file, NSStri
 
     #define remapResourceName(oldname, newname) \
         else if ([file isEqualToString:(oldname)]) \
-            [names addObject:[NSString stringWithFormat:@"%@.png", newname]]; \
+            [names addObject:oldname ".png"];
 
     bool summer(SpringBoard_ && SummerBoard_);
 
