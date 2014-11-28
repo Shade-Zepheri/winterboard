@@ -1225,7 +1225,7 @@ static UIImage *$getImage$(NSString *path) {
 }
 
 template <typename Original_, typename Modified_>
-_finline UIImage *WBCacheImage(const Original_ &original, const Modified_ &modified, NSString *key) {
+_finline UIImage *WBCacheImage(const Modified_ &modified, const Original_ &original, NSString *key) {
     UIImage *image([Images_ objectForKey:key]);
     if (image != nil)
         return reinterpret_cast<id>(image) == [NSNull null] ? original() : image;
@@ -2042,7 +2042,7 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 // }}}
 
 template <typename Original_>
-static UIImage *WBCacheUIImage(NSBundle *bundle, const Original_ &original, NSString *name, NSString *key) {
+static UIImage *WBCacheImage(NSBundle *bundle, NSString *name, const Original_ &original, NSString *key) {
     if (name == nil)
         return original();
     NSUInteger period([name rangeOfString:@"."].location);
@@ -2050,7 +2050,9 @@ static UIImage *WBCacheUIImage(NSBundle *bundle, const Original_ &original, NSSt
     if (period == NSNotFound || length < 4 || period > length - 4)
         name = [name stringByAppendingString:@".png"];
 
-    return WBCacheImage([bundle, &original, name](){
+    return WBCacheImage(
+        [=](){ return $pathForFile$inBundle$(name, bundle, true); },
+    [bundle, &original, name](){
         UIImage *image(original());
         if (image != nil && UIDebug_) {
             NSString *path([@"/tmp/WBImages/" stringByAppendingString:[bundle bundleIdentifier]]);
@@ -2059,7 +2061,8 @@ static UIImage *WBCacheUIImage(NSBundle *bundle, const Original_ &original, NSSt
             if (![Manager_ fileExistsAtPath:path])
                 [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
         } return image;
-    }, [=](){ return $pathForFile$inBundle$(name, bundle, true); }, key);
+    },
+    key);
 }
 
 // %hook _UIImageWithName() {{{
@@ -2068,9 +2071,9 @@ MSHook(UIImage *, _UIImageWithName, NSString *name) {
         return nil;
     if (Debug_)
         NSLog(@"WB:Debug: _UIImageWithName(\"%@\")", name);
-    return WBCacheUIImage(_UIKitBundle(),
+    return WBCacheImage(_UIKitBundle(), name,
         [=](){ return __UIImageWithName(name); },
-    name, [NSString stringWithFormat:@"I:%@", name]);
+    [NSString stringWithFormat:@"I:%@", name]);
 }
 // }}}
 // %hook _UIImageWithNameInDomain() {{{
@@ -2078,8 +2081,8 @@ MSHook(UIImage *, _UIImageWithNameInDomain, NSString *name, NSString *domain) {
     if (Debug_)
         NSLog(@"WB:Debug: _UIImageWithNameInDomain(\"%@\", \"%@\")", name, domain);
     return WBCacheImage(
-        [=](){ return __UIImageWithNameInDomain(name, domain); },
         [=](){ return $getTheme$($useScale$([NSArray arrayWithObject:[NSString stringWithFormat:@"Domains/%@/%@", domain, name]])); },
+        [=](){ return __UIImageWithNameInDomain(name, domain); },
     [NSString stringWithFormat:@"D:%zu:%@%@", size_t([domain length]), domain, name]);
 }
 // }}}
@@ -2095,9 +2098,9 @@ MSInstanceMessageHook2(UIImage *, UISharedArtwork, imageNamed,device, NSString *
     NSBundle *bundle($objc_getAssociatedObject(self, @selector(wb$bundle)));
     if (Debug_)
         NSLog(@"WB:Debug: -[UISharedArtwork(%@) imageNamed:@\"%@\" device:%li]", [bundle bundleIdentifier], name, (long) device);
-    return WBCacheUIImage(bundle,
+    return WBCacheImage(bundle, name,
         [=](){ return MSOldCall(name, device); },
-    name, [NSString stringWithFormat:@"M:%p:%@:%li", self, name, (long) device]);
+    [NSString stringWithFormat:@"M:%p:%@:%li", self, name, (long) device]);
 }
 // }}}
 // _UIAssetManager (iOS 7) {{{
@@ -2126,9 +2129,9 @@ MSInstanceMessageHook5(UIImage *, _UIAssetManager, imageNamed,scale,idiom,subtyp
             bundle = [WBBundle bundleWithIdentifier:@"com.apple.uikit.LegacyArtwork"];
     }
 
-    return WBCacheUIImage(bundle,
+    return WBCacheImage(bundle, name,
         [=](){ return MSOldCall(name, scale, idiom, subtype, caching); },
-    name, [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu", self, name, scale, (long) idiom, (unsigned long) subtype]);
+    [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu", self, name, scale, (long) idiom, (unsigned long) subtype]);
 }
 // }}}
 // _UIAssetManager (iOS 8) {{{
@@ -2148,9 +2151,9 @@ MSInstanceMessageHook7(UIImage *, _UIAssetManager, imageNamed,scale,idiom,subtyp
             (long) size.first, (long) size.second,
             attach ? "YES" : "NO"
         );
-    return WBCacheUIImage(bundle,
+    return WBCacheImage(bundle, name,
         [=](){ return MSOldCall(name, scale, idiom, subtype, caching, size, attach); },
-    name, [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu:%li:%li:%c", self, name, scale, (long) idiom, (unsigned long) subtype, (long) size.first, (long) size.second, attach ? 'Y' : 'N']);
+    [NSString stringWithFormat:@"M:%p:%@:%g:%li:%lu:%li:%li:%c", self, name, scale, (long) idiom, (unsigned long) subtype, (long) size.first, (long) size.second, attach ? 'Y' : 'N']);
 }
 // }}}
 
