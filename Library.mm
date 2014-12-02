@@ -748,10 +748,13 @@ MSHook(CFURLRef, CFBundleCopyResourceURL, CFBundleRef bundle, CFStringRef resour
     if (subDirName != NULL)
         file = [NSString stringWithFormat:@"%@/%@", subDirName, resourceType];
 
-    if (Debug_)
-        NSLog(@"WB:Debug: CFBundleCopyResourceURL(<%@>, \"%@\", \"%@\", \"%@\")", CFBundleGetIdentifier(bundle), resourceName, resourceType, subDirName);
-    if (NSString *path = $pathForFile$inBundle$(file, bundle, false))
-        return (CFURLRef) [[NSURL alloc] initFileURLWithPath:path];
+    if (![file hasSuffix:@".png"]) {
+        if (Debug_)
+            NSLog(@"WB:Debug: CFBundleCopyResourceURL(<%@>, \"%@\", \"%@\", \"%@\")", CFBundleGetIdentifier(bundle), resourceName, resourceType, subDirName);
+        if (NSString *path = $pathForFile$inBundle$(file, bundle, false))
+            return (CFURLRef) [[NSURL alloc] initFileURLWithPath:path];
+    }
+
     return _CFBundleCopyResourceURL(bundle, resourceName, resourceType, subDirName);
 }
 // }}}
