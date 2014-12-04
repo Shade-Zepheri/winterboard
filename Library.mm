@@ -305,10 +305,16 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
         NSString *extension([file pathExtension]);
 
         if (use) {
-            for (unsigned scale(2); scale <= Scale_; ++scale) {
-                [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, scale, idiom, extension]];
-                [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, scale, extension]];
+            if (Scale_ != 1) {
+                [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, Scale_, idiom, extension]];
+                [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, Scale_, extension]];
             }
+
+            for (unsigned scale(3); scale >= 2; --scale)
+                if (scale != Scale_) {
+                    [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, scale, idiom, extension]];
+                    [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, scale, extension]];
+                }
 
             [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
 
