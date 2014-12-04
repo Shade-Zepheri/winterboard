@@ -298,7 +298,7 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
 
     NSString *idiom(IsWild_ ? @"ipad" : @"iphone");
 
-    NSMutableArray *scaled([NSMutableArray arrayWithCapacity:([files count] * 4)]);
+    NSMutableArray *scaled([NSMutableArray arrayWithCapacity:([files count] * 6)]);
 
     for (NSString *file in files) {
         NSString *base([file stringByDeletingPathExtension]);
