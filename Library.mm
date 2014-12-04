@@ -2570,6 +2570,7 @@ MSInitialize {
     // }}}
     // Foundation {{{
     if (true) {
+        if (![identifier isEqualToString:@"com.apple.backupd"]) // XXX: rethink
         MSHookFunction(CFBundleCopyResourceURL, MSHake(CFBundleCopyResourceURL));
     }
     // }}}
