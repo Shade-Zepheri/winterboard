@@ -492,7 +492,7 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
 
 @implementation NSBundle (WinterBoard)
 
-+ (NSBundle *) wb$bundleWithFile:(NSString *)path {
++ (NSBundle *) _wb$bundleWithFile:(NSString *)path {
     path = [path stringByDeletingLastPathComponent];
     if (path == nil || [path length] == 0 || [path isEqualToString:@"/"])
         return nil;
@@ -508,7 +508,7 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
         if ([Manager_ fileExistsAtPath:[path stringByAppendingPathComponent:@"Info.plist"]])
             bundle = [NSBundle bundleWithPath:path];
         if (bundle == nil)
-            bundle = [NSBundle wb$bundleWithFile:path];
+            bundle = [NSBundle _wb$bundleWithFile:path];
         if (Debug_)
             NSLog(@"WB:Debug:PathBundle(%@, %@)", path, bundle);
 
@@ -518,6 +518,12 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
     }
 
     return bundle;
+}
+
++ (NSBundle *) wb$bundleWithFile:(NSString *)path {
+    if ([path hasPrefix:@"/Library/Themes"])
+        return nil;
+    return [self _wb$bundleWithFile:path];
 }
 
 @end
@@ -530,9 +536,6 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
 @implementation NSString (WinterBoard)
 
 - (NSString *) wb$themedPath {
-    if ([self hasPrefix:@"/Library/Themes/"])
-        return self;
-
     if (Debug_)
         NSLog(@"WB:Debug:Bypass(\"%@\")", self);
 
