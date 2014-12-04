@@ -304,25 +304,23 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
         NSString *base([file stringByDeletingPathExtension]);
         NSString *extension([file pathExtension]);
 
+#define WBScaleImage(scale) \
+    if (scale == 1) { \
+        [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]]; \
+        [scaled addObject:file]; \
+    } else { \
+        [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, scale, idiom, extension]]; \
+        [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, scale, extension]]; \
+    }
+
         if (use) {
-            if (Scale_ != 1) {
-                [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, Scale_, idiom, extension]];
-                [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, Scale_, extension]];
-            }
+            WBScaleImage(Scale_);
 
-            for (unsigned scale(3); scale >= 2; --scale)
-                if (scale != Scale_) {
-                    [scaled addObject:[NSString stringWithFormat:@"%@@%ux~%@.%@", base, scale, idiom, extension]];
-                    [scaled addObject:[NSString stringWithFormat:@"%@@%ux.%@", base, scale, extension]];
-                }
-
-            [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
-
-            // if (!IsWild_) <- support old themes
-            [scaled addObject:file];
+            for (unsigned scale(3); scale >= 1; --scale)
+                if (scale != Scale_)
+                    WBScaleImage(scale);
         } else if ([base hasSuffix: @"@2x"] || [base hasSuffix:@"@3x"]) {
-            [scaled addObject:[NSString stringWithFormat:@"%@~%@.%@", base, idiom, extension]];
-            [scaled addObject:file];
+            WBScaleImage(1);
 
             // XXX: this actually can't be used, as the person loading the file doesn't realize that the @2x changed
             /*NSString *rest([base substringWithRange:NSMakeRange(0, [base length] - 3)]);
