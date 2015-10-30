@@ -102,6 +102,7 @@ Class $MPVideoView;
 
 MSClassHook(NSBundle)
 MSClassHook(NSString)
+MSClassHook(NSAttributedString)
 
 MSClassHook(_UIAssetManager)
 MSClassHook(UIImage)
@@ -896,6 +897,30 @@ MSInstanceMessage6(CGSize, NSString, drawAtPoint,forWidth,withFont,lineBreakMode
     return CGSizeZero;
 }
 
+MSInstanceMessage1(void, NSAttributedString, drawAtPoint, CGPoint, point) {
+    //NSLog(@"XXX: @\"%@\" %@", self, NSStringFromCGPoint(point));
+
+    WBStringDrawingState *state(stringDrawingState_);
+    if (state == NULL)
+        return MSOldCall(point);
+
+    if (state->count_ != 0 && --state->count_ == 0)
+        stringDrawingState_ = state->next_;
+    if (state->info_ == nil)
+        return MSOldCall(point);
+
+    NSString *info([Info_ objectForKey:state->info_]);
+    if (info == nil)
+        return MSOldCall(point);
+
+    NSDictionary *attributes([self attributesAtIndex:0 effectiveRange:NULL]);
+
+    UIFont *font([attributes objectForKey:@"NSFont"]);
+
+    NSString *base(state->base_ ?: @"");
+    [[self string] drawAtPoint:point withStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(), base, info]];
+}
+
 extern "C" NSString *NSStringFromCGRect(CGRect rect);
 
 MSInstanceMessageHook7(CGSize, NSString, _drawInRect,withFont,lineBreakMode,alignment,lineSpacing,includeEmoji,truncationRect, CGRect, rect, UIFont *, font, UILineBreakMode, mode, UITextAlignment, alignment, float, spacing, BOOL, emoji, CGRect, truncation) {
@@ -989,6 +1014,32 @@ MSInstanceMessage4(CGRect, NSString, boundingRectWithSize,options,attributes,con
     return (CGRect) {{0, 0}, [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(color), base, info] forWidth:size.width]};
 }
 
+MSInstanceMessage3(CGRect, NSAttributedString, boundingRectWithSize,options,context, CGSize, size, NSInteger, options, id, context) {
+    //NSLog(@"XXX: $\"%@\" %@ 0x%x %@", self, NSStringFromCGSize(size), unsigned(options), context);
+
+    WBStringDrawingState *state(stringDrawingState_);
+    if (state == NULL)
+        return MSOldCall(size, options, context);
+
+    if (state->count_ != 0 && --state->count_ == 0)
+        stringDrawingState_ = state->next_;
+    if (state->info_ == nil)
+        return MSOldCall(size, options, context);
+
+    NSString *info([Info_ objectForKey:state->info_]);
+    if (info == nil)
+        return MSOldCall(size, options, context);
+
+    NSString *base(state->base_ ?: @"");
+
+    NSDictionary *attributes([self attributesAtIndex:0 effectiveRange:NULL]);
+
+    UIFont *font([attributes objectForKey:@"NSFont"]);
+    UIColor *color([attributes objectForKey:@"NSColor"]);
+
+    return (CGRect) {{0, 0}, [[self string] sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(color), base, info] forWidth:size.width]};
+}
+
 MSInstanceMessage4(CGSize, NSString, sizeWithFont,forWidth,lineBreakMode,letterSpacing, UIFont *, font, CGFloat, width, UILineBreakMode, mode, CGFloat, spacing) {
     //NSLog(@"XXX: #\"%@\" \"%@\" %g %u %g", self, font, width, mode, spacing);
 
@@ -1070,14 +1121,20 @@ MSInstanceMessageHook1(UIImage *, SBIconBadgeFactory, checkoutBadgeImageForText,
 }
 
 MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, int, type) {
-    WBStringDrawingState dayState = {NULL, 2, @""
+    WBStringDrawingState dayState = {NULL, unsigned(kCFCoreFoundationVersionNumber >= 1200 ? 1 : 2), @""
         // XXX: this is only correct on an iPod dock
         "text-shadow: rgba(0, 0, 0, 0.2) -1px -1px 2px;"
     , @"CalendarIconDayStyle"};
 
-    WBStringDrawingState skipState = {&dayState,
-        unsigned(kCFCoreFoundationVersionNumber > 800 ? 16 : 7)
-    , nil, nil};
+    unsigned skips;
+    if (kCFCoreFoundationVersionNumber < 800)
+        skips = 7;
+    else if (kCFCoreFoundationVersionNumber < 1200)
+        skips = 16;
+    else
+        skips = 9;
+
+    WBStringDrawingState skipState = {&dayState, skips, nil, nil};
 
     WBStringDrawingState dateState = {&skipState, 2, @""
     , @"CalendarIconDateStyle"};
@@ -2663,6 +2720,9 @@ MSInitialize {
         if (![@"" respondsToSelector:sizeWithFont])
             sizeWithFont = @selector(sizeWithFont:);
         MSHookMessage($NSString, sizeWithFont, MSHake(NSString$sizeWithFont$));
+
+        MSHookMessage($NSAttributedString, @selector(drawAtPoint:), MSHake(NSAttributedString$drawAtPoint$));
+        MSHookMessage($NSAttributedString, @selector(boundingRectWithSize:options:context:), MSHake(NSAttributedString$boundingRectWithSize$options$context$));
     }
     // }}}
 
