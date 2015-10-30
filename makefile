@@ -2,10 +2,10 @@ cycc = cycc -i2.0 -o$@ -- $(filter %.mm,$^) -g0 -O2 -Werror -Iiphone-api -F/Syst
 
 substrate := -I../substrate -L../substrate -lsubstrate
 
-all: WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
+all: WinterBoard.dylib WinterBoardSettings Optimize
 
 clean:
-	rm -f WinterBoard WinterBoard.dylib WinterBoardSettings Optimize
+	rm -f WinterBoard.dylib WinterBoardSettings Optimize
 
 WinterBoardSettings: Settings.mm makefile
 	$(cycc) -std=c++11 -dynamiclib \
