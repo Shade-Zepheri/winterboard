@@ -2304,7 +2304,7 @@ MSHook(NSArray *, CPBitmapCreateImagesFromPath, NSString *path, CFTypeRef *names
     NSArray *images(_CPBitmapCreateImagesFromPath(path, names, arg2, arg3));
     if (images == nil)
         return nil;
-    if (*names == nil)
+    if (names == NULL || *names == nil)
         return images;
 
     NSBundle *bundle([NSBundle wb$bundleWithFile:path]);
