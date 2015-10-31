@@ -1037,6 +1037,7 @@ MSInstanceMessage3(CGRect, NSAttributedString, boundingRectWithSize,options,cont
     UIFont *font([attributes objectForKey:@"NSFont"]);
     UIColor *color([attributes objectForKey:@"NSColor"]);
 
+    MSOldCall(size, options, context);
     return (CGRect) {{0, 0}, [[self string] sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(color), base, info] forWidth:size.width]};
 }
 
@@ -1121,7 +1122,7 @@ MSInstanceMessageHook1(UIImage *, SBIconBadgeFactory, checkoutBadgeImageForText,
 }
 
 MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, int, type) {
-    WBStringDrawingState dayState = {NULL, unsigned(kCFCoreFoundationVersionNumber >= 1200 ? 1 : 2), @""
+    WBStringDrawingState dayState = {NULL, unsigned(kCFCoreFoundationVersionNumber >= 1200 ? 3 : 2), @""
         // XXX: this is only correct on an iPod dock
         "text-shadow: rgba(0, 0, 0, 0.2) -1px -1px 2px;"
     , @"CalendarIconDayStyle"};
@@ -1132,7 +1133,7 @@ MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, 
     else if (kCFCoreFoundationVersionNumber < 1200)
         skips = 16;
     else
-        skips = 9;
+        skips = 7;
 
     WBStringDrawingState skipState = {&dayState, skips, nil, nil};
 
