@@ -66,7 +66,6 @@ bool _itv;
 #import <SpringBoard/SBIconList.h>
 #import <SpringBoard/SBIconModel.h>
 #import <SpringBoard/SBImageCache.h>
-// XXX: #import <SpringBoard/SBSearchView.h>
 #import <SpringBoard/SBSearchTableViewCell.h>
 #import <SpringBoard/SBStatusBarContentsView.h>
 #import <SpringBoard/SBStatusBarController.h>
@@ -317,9 +316,11 @@ static NSArray *$useScale$(NSArray *files, bool use = true) {
         if (use) {
             WBScaleImage(Scale_);
 
-            for (unsigned scale(3); scale >= 1; --scale)
-                if (scale != Scale_)
-                    WBScaleImage(scale);
+            for (unsigned scale(3); scale >= 1; --scale) {
+              if (scale != Scale_) {
+                WBScaleImage(scale);
+              }
+            }
         } else if ([base hasSuffix: @"@2x"] || [base hasSuffix:@"@3x"]) {
             WBScaleImage(1);
 
@@ -1345,24 +1346,25 @@ MSInstanceMessageHook0(id, SBUIController, init) {
         NSLog(@"WB:Debug:Info = %@", [Info_ description]);
 
     if (paper != nil) {
-        UIImageView *&_wallpaperView(MSHookIvar<UIImageView *>(self, "_wallpaperView"));
-        if (&_wallpaperView != NULL) {
+        UIImageView *_wallpaperView(MSHookIvar<UIImageView *>(self, "_wallpaperView"));
+        if (_wallpaperView) {
             [_wallpaperView removeFromSuperview];
             [_wallpaperView release];
             _wallpaperView = nil;
         }
     }
 
-    UIView *&_contentLayer(MSHookIvar<UIView *>(self, "_contentLayer"));
-    UIView *&_contentView(MSHookIvar<UIView *>(self, "_contentView"));
+    UIView *_contentLayer(MSHookIvar<UIView *>(self, "_contentLayer"));
+    UIView *_contentView(MSHookIvar<UIView *>(self, "_contentView"));
 
     UIView **player;
-    if (&_contentLayer != NULL)
-        player = &_contentLayer;
-    else if (&_contentView != NULL)
-        player = &_contentView;
-    else
+    if (_contentLayer) {
+      player = &_contentLayer;
+    } else if (_contentView) {
+      player = &_contentView;
+    } else {
         player = NULL;
+    }
     UIView *layer(player == NULL ? nil : *player);
 
     UIWindow *window([[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]]);
@@ -1529,11 +1531,15 @@ MSHook(void, SBAwayView$updateDesktopImage$, SBAwayView *self, SEL sel, UIImage 
 MSHook(void, SBAwayView$_addSubview$positioned$relativeTo$, SBAwayView *self, SEL sel, UIView *view, int positioned, UIView *relative) {
     UIView *&_backgroundView(MSHookIvar<UIView *>(self, "_backgroundView"));
     UIView *&_chargingView(MSHookIvar<UIView *>(self, "_chargingView"));
-    if (&_chargingView != NULL)
-        if (positioned == -2 && (relative == _backgroundView && _chargingView == nil || relative == _chargingView))
-            if ($objc_getAssociatedObject != NULL)
-                if (UIView *widget = $objc_getAssociatedObject(self, @selector(wb$widgetView)))
-                    relative = widget;
+    if (_chargingView) {
+      if (positioned == -2 && ((relative == _backgroundView && _chargingView == nil) || relative == _chargingView)) {
+        if ($objc_getAssociatedObject != NULL) {
+          if (UIView *widget = $objc_getAssociatedObject(self, @selector(wb$widgetView))) {
+            relative = widget;
+          }
+        }
+      }
+    }
     return _SBAwayView$_addSubview$positioned$relativeTo$(self, sel, view, positioned, relative);
 }
 
@@ -1845,8 +1851,9 @@ MSInstanceMessageHook0(void, SBIconContentView, layoutSubviews) {
 
     if (SBIconController *controller = [$SBIconController sharedInstance]) {
         UIView *&_dockContainerView(MSHookIvar<UIView *>(controller, "_dockContainerView"));
-        if (&_dockContainerView != NULL)
-            [[_dockContainerView superview] bringSubviewToFront:_dockContainerView];
+        if (_dockContainerView) {
+          [[_dockContainerView superview] bringSubviewToFront:_dockContainerView];
+        }
     }
 }
 
@@ -1858,8 +1865,9 @@ MSHook(void, SBIconController$noteNumberOfIconListsChanged, SBIconController *se
 
 MSHook(id, SBIconLabel$initWithSize$label$, SBIconLabel *self, SEL sel, CGSize size, NSString *label) {
     self = _SBIconLabel$initWithSize$label$(self, sel, size, label);
-    if (self != nil)
-        [self setClipsToBounds:NO];
+    if (self != nil) {
+      [self setClipsToBounds:NO];
+    }
     return self;
 }
 
@@ -1998,8 +2006,9 @@ MSClassMessage2(id, SBIconView, _labelImageParametersForIcon,location, id, icon,
 MSInstanceMessage0(id, SBIconView, _labelImageParameters) {
     if (id parameters = MSOldCall()) {
         int &location(MSHookIvar<int>(self, "_iconLocation"));
-        if (&location != NULL)
+        if (location) {
             $objc_setAssociatedObject(parameters, @selector(wb$inDock), [NSNumber numberWithBool:(location == 3)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
         return parameters;
     } return nil;
 }
@@ -2086,16 +2095,16 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
         if (UIImage *image = $getImage$(path)) {
             SMSBackgrounded_ = true;
 
-            UIView *&_transcriptTable(MSHookIvar<UIView *>(self, "_transcriptTable"));
-            UIView *&_transcriptLayer(MSHookIvar<UIView *>(self, "_transcriptLayer"));
+            UIView *_transcriptTable(MSHookIvar<UIView *>(self, "_transcriptTable"));
+            UIView *_transcriptLayer(MSHookIvar<UIView *>(self, "_transcriptLayer"));
             UIView *table;
-            if (&_transcriptTable != NULL)
-                table = _transcriptTable;
-            else if (&_transcriptLayer != NULL)
-                table = _transcriptLayer;
-            else
-                table = nil;
-
+            if (_transcriptTable) {
+              table = _transcriptTable;
+            } else if (_transcriptLayer) {
+              table = _transcriptLayer;
+            } else {
+              table = nil;
+            }
             UIView *placard(table != nil ? [table superview] : MSHookIvar<UIView *>(self, "_backPlacard"));
             UIImageView *background([[[UIImageView alloc] initWithImage:image] autorelease]);
 
@@ -2111,13 +2120,14 @@ MSInstanceMessageHook0(void, CKTranscriptController, loadView) {
 
 template <typename Original_>
 static UIImage *WBCacheImage(NSBundle *bundle, NSString *name, const Original_ &original, NSString *key) {
-    if (name == nil)
-        return original();
+    if (name == nil) {
+      return original();
+    }
     NSUInteger period([name rangeOfString:@"."].location);
     NSUInteger length([name length]);
-    if (period == NSNotFound || length < 4 || period > length - 4)
-        name = [name stringByAppendingString:@".png"];
-
+    if (period == NSNotFound || length < 4 || period > length - 4) {
+      name = [name stringByAppendingString:@".png"];
+    }
     return WBCacheImage(
         [=](){ return $pathForFile$inBundle$(name, bundle, true); },
     [bundle, &original, name](){
@@ -2126,9 +2136,11 @@ static UIImage *WBCacheImage(NSBundle *bundle, NSString *name, const Original_ &
             NSString *path([@"/tmp/WBImages/" stringByAppendingString:[bundle bundleIdentifier]]);
             [Manager_ createDirectoryAtPath:path withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions: @0777} error:NULL];
             path = [NSString stringWithFormat:@"%@/%@", path, name];
-            if (![Manager_ fileExistsAtPath:path])
-                [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
-        } return image;
+            if (![Manager_ fileExistsAtPath:path]) {
+              [UIImagePNGRepresentation(image) writeToFile:path atomically:YES];
+            }
+        }
+        return image;
     },
     key);
 }

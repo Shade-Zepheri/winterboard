@@ -452,7 +452,8 @@ static void RestartSpringBoard() {
 }
 
 - (void) __optimizeThemes {
-    system("/usr/libexec/winterboard/Optimize");
+    //system("/usr/libexec/winterboard/Optimize");
+    system("/usr/bin/find -P /Library/Themes/ -name '*.png' -not -xtype l -print0 | /usr/bin/xargs -0 pincrush -i");
 }
 
 - (void) optimizeThemes {

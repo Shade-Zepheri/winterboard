@@ -28,8 +28,6 @@ mkdir -p package/Library/MobileSubstrate/DynamicLibraries
 mkdir -p package/Library/PreferenceLoader/Preferences
 mkdir -p package/System/Library/PreferenceBundles
 mkdir -p package/usr/libexec/winterboard
-cp -a Optimize package/usr/libexec/winterboard
-chmod 6755 package/usr/libexec/winterboard/Optimize
 cp -a WinterBoardSettings.plist package/Library/PreferenceLoader/Preferences
 cp -a WinterBoardSettings7.plist package/Library/PreferenceLoader/Preferences
 cp -a WinterBoardSettings.bundle package/System/Library/PreferenceBundles
