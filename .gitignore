@@ -5,3 +5,17 @@ WinterBoardSettings
 *.deb
 Optimize
 package
+
+.DS_Store
+._*
+*.deb
+.debmake
+_
+obj
+.theos/*
+.theos/
+packages/*
+*.bak
+
+.*
+!/.gitignore
