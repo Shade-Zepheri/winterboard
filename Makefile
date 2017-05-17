@@ -2,16 +2,17 @@ export TARGET = iphone:9.3
 
 CFLAGS = -fobjc-arc
 
-INSTALL_TARGET_PROCESSES = SpringBoard
+INSTALL_TARGET_PROCESSES = Preferences
+
+ifeq ($(RESPRING),1)
+INSTALL_TARGET_PROCESSES += SpringBoard
+endif
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Winterboard
 Winterboard_FILES = Library.mm WBMarkup.mm
 Winterboard_FRAMEWORKS = UIKit QuartzCore
-
-BUNDLE_NAME = Winterboard-Default
-Winterboard-Default_INSTALL_PATH = /Library/Themes/
 
 SUBPROJECTS = winterboardprefs
 
