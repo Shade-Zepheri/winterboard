@@ -32,57 +32,8 @@
 #include <dlfcn.h>
 #include <objc/runtime.h>
 
-extern NSString *PSTableCellKey;
-extern "C" UIImage *_UIImageWithName(NSString *);
-
-static UIImage *checkImage;
-static UIImage *uncheckedImage;
-
-static BOOL settingsChanged;
-static NSMutableDictionary *_settings;
-static NSString *_plist;
-
-void AddThemes(NSMutableArray *themesOnDisk, NSString *folder) {
-    NSArray *themes([[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL]);
-    for (NSString *theme in themes) {
-        if (NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/%@/Info.plist", folder, theme]]) {
-            if (NSArray *version = [info objectForKey:@"CoreFoundationVersion"]) {
-                size_t count([version count]);
-                if (count == 0 || count > 2)
-                    continue;
-
-                double lower([[version objectAtIndex:0] doubleValue]);
-                if (kCFCoreFoundationVersionNumber < lower)
-                    continue;
-
-                if (count != 1) {
-                    double upper([[version objectAtIndex:1] doubleValue]);
-                    if (upper <= kCFCoreFoundationVersionNumber)
-                        continue;
-                }
-            }
-        }
-
-        [themesOnDisk addObject:theme];
-    }
-}
-
-/* Theme Settings Controller {{{ */
-
-
-
-
-
-/* }}} */
-
-//
-
-
-
-//
-
-
-
+//Not sure what the hooks are for but ok
+/*
 #define WBSAddMethod(_class, _sel, _imp, _type) \
     if (![[_class class] instancesRespondToSelector:@selector(_sel)]) \
         class_addMethod([_class class], @selector(_sel), (IMP)_imp, _type)
@@ -102,3 +53,20 @@ static __attribute__((constructor)) void __wbsInit() {
     WBSAddMethod(PSViewController, hideNavigationBarButtons, $PSViewController$hideNavigationBarButtons, "v@:");
     WBSAddMethod(PSViewController, initForContentSize:, $PSViewController$initForContentSize$, "@@:{ff}");
 }
+*/
+
+%hook PSRootController
+%new - (void)popController {
+    [self popViewControllerAnimated:YES];
+}
+%end
+
+%hook PSViewController
+%new - (void)hideNavigationBarButtons {
+
+}
+
+%new - (instancetype)initForContentSize:(CGRect)contentSize {
+    return [self init];
+}
+%end

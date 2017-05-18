@@ -1,6 +1,8 @@
 #import "WNBAdvancedController.h"
 #import "WNBRootListController.h"
 
+extern BOOL settingsChanged;
+
 @implementation WNBAdvancedController
 
 - (NSArray*)specifiers {

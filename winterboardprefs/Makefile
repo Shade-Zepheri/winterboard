@@ -3,10 +3,11 @@ CFLAGS = -fobjc-arc
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = WinterboardPrefs
-WinterboardPrefs_FILES = WNBRootListController.m
+WinterboardPrefs_FILES = $(wildcard *.m) Settings.x
 WinterboardPrefs_INSTALL_PATH = /Library/PreferenceBundles
 WinterboardPrefs_FRAMEWORKS = UIKit
 WinterboardPrefs_PRIVATE_FRAMEWORKS = Preferences
+WinterboardPrefs_EXTRA_FRAMEWORKS = CydiaSubstrate
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

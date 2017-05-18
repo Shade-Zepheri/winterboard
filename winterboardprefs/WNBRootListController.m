@@ -1,5 +1,7 @@
 #include "WNBRootListController.h"
 
+BOOL settingsChanged;
+
 @implementation WNBRootListController
 
 - (void)loadSettings {
@@ -36,7 +38,7 @@
 		if (!data) {
 				return;
 		}
-		if (![data writeToFile:_plist options:NSAtomicWrite error:NULL]) {
+		if (![data writeToFile:WNBPreferencePath options:NSAtomicWrite error:NULL]) {
 				return;
 		}
 }
@@ -164,12 +166,12 @@
 
 - (void)settingsChanged {
 		if (![[PSViewController class] instancesRespondToSelector:@selector(showLeftButton:withStyle:rightButton:withStyle:)]) {
-				UIBarButtonItem *respringButton([[UIBarButtonItem alloc] initWithTitle:@"Respring" style:UIBarButtonItemStyleDone target:self action:@selector(settingsConfirmButtonClicked:)]);
-				UIBarButtonItem *cancelButton([[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(settingsConfirmButtonClicked:)]);
+				UIBarButtonItem *respringButton = [[UIBarButtonItem alloc] initWithTitle:@"Respring" style:UIBarButtonItemStyleDone target:self action:@selector(settingsConfirmButtonClicked:)];
+				UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(settingsConfirmButtonClicked:)];
 				cancelButton.tag = 0;
 				respringButton.tag = 1;
-				[[self navigationItem] setLeftBarButtonItem:respringButton];
-				[[self navigationItem] setRightBarButtonItem:cancelButton];
+				[self.navigationItem setLeftBarButtonItem:respringButton];
+				[self.navigationItem setRightBarButtonItem:cancelButton];
 		} else {
 				[self showLeftButton:@"Respring" withStyle:2 rightButton:@"Cancel" withStyle:0];
 		}
