@@ -230,40 +230,6 @@ static NSMutableArray *Themes_;
 static NSDictionary *English_;
 static NSMutableDictionary *Info_;
 
-// @interface WBBundle {{{
-@interface WBBundle : NSBundle {
-    NSString *identifier_;
-}
-
-+ (WBBundle *) bundleWithIdentifier:(NSString *)identifier;
-
-@end
-
-@implementation WBBundle
-
-- (void) dealloc {
-    [identifier_ release];
-    return [super dealloc];
-}
-
-+ (WBBundle *) bundleWithIdentifier:(NSString *)identifier {
-    return [[[self alloc] initWithIdentifier:identifier] autorelease];
-}
-
-- (id) initWithIdentifier:(NSString *)identifier {
-    if ((self = [super init]) != nil) {
-        identifier_ = [identifier retain];
-    } return self;
-}
-
-- (NSString *) bundleIdentifier {
-    return identifier_;
-}
-
-@end
-// }}}
-
-// $getTheme$() {{{
 static NSMutableDictionary *Themed_ = [[NSMutableDictionary alloc] initWithCapacity:128];
 
 static unsigned Scale_ = 0;
@@ -1548,54 +1514,6 @@ extern "C" CGColorRef CGGStateGetFillColor(void *);
 extern "C" CGColorRef CGGStateGetStrokeColor(void *);
 extern "C" NSString *UIStyleStringFromColor(CGColorRef);*/
 
-/* WBTimeLabel {{{ */
-@interface WBTimeLabel : NSProxy {
-    NSString *time_;
-    _transient SBStatusBarTimeView *view_;
-}
-
-- (id) initWithTime:(NSString *)time view:(SBStatusBarTimeView *)view;
-
-@end
-
-@implementation WBTimeLabel
-
-- (void) dealloc {
-    [time_ release];
-    [super dealloc];
-}
-
-- (id) initWithTime:(NSString *)time view:(SBStatusBarTimeView *)view {
-    time_ = [time retain];
-    view_ = view;
-    return self;
-}
-
-- (NSString *) description {
-    return time_;
-}
-
-WBDelegate(time_)
-
-- (CGSize) drawAtPoint:(CGPoint)point forWidth:(float)width withFont:(UIFont *)font lineBreakMode:(UILineBreakMode)mode {
-    if (NSString *custom = [Info_ objectForKey:@"TimeStyle"]) {
-        BOOL &_mode(MSHookIvar<BOOL>(view_, "_mode"));;
-
-        [time_ drawAtPoint:point withStyle:[NSString stringWithFormat:@""
-            "font-family: Helvetica; "
-            "font-weight: bold; "
-            "font-size: 14px; "
-            "color: %@; "
-        "%@", _mode ? @"white" : @"black", custom]];
-
-        return CGSizeZero;
-    }
-
-    return [time_ drawAtPoint:point forWidth:width withFont:font lineBreakMode:mode];
-}
-
-@end
-/* }}} */
 /* WBBadgeLabel {{{ */
 @interface WBBadgeLabel : NSProxy {
     NSString *badge_;
@@ -2743,3 +2661,5 @@ MSInitialize {
 
     [pool release];
 }
+
+///Yay 2745 lines to convert

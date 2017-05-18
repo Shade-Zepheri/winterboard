@@ -1,3 +1,5 @@
+CFLAGS = -fobjc-arc
+
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = WinterboardPrefs
