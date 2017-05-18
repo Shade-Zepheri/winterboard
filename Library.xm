@@ -1449,49 +1449,8 @@ extern "C" CGColorRef CGGStateGetStrokeColor(void *);
 extern "C" NSString *UIStyleStringFromColor(CGColorRef);*/
 
 /* WBBadgeLabel {{{ */
-@interface WBBadgeLabel : NSProxy {
-    NSString *badge_;
-}
 
-- (id) initWithBadge:(NSString *)badge;
-- (NSString *) description;
 
-@end
-
-@implementation WBBadgeLabel
-
-- (void) dealloc {
-    [badge_ release];
-    [super dealloc];
-}
-
-- (id) initWithBadge:(NSString *)badge {
-    badge_ = [badge retain];
-    return self;
-}
-
-- (NSString *) description {
-    return [badge_ description];
-}
-
-WBDelegate(badge_)
-
-- (CGSize) drawAtPoint:(CGPoint)point forWidth:(float)width withFont:(UIFont *)font lineBreakMode:(UILineBreakMode)mode {
-    if (NSString *custom = [Info_ objectForKey:@"BadgeStyle"]) {
-        [badge_ drawAtPoint:point withStyle:[NSString stringWithFormat:@""
-            "font-family: Helvetica; "
-            "font-weight: bold; "
-            "font-size: 17px; "
-            "color: white; "
-        "%@", custom]];
-
-        return CGSizeZero;
-    }
-
-    return [badge_ drawAtPoint:point forWidth:width withFont:font lineBreakMode:mode];
-}
-
-@end
 /* }}} */
 
 // IconAlpha {{{
@@ -2373,7 +2332,7 @@ static void SBInitialize() {
     return fd;
 }*/
 
-MSInitialize {
+%ctor {
     $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
     $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
     $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
