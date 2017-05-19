@@ -73,12 +73,7 @@ BOOL settingsChanged;
 
 		system("killall -9 lsd");
 
-		//TODO: Use proper respring methods
-		if (kCFCoreFoundationVersionNumber > 700) { // XXX: iOS 6.x
-				system("killall backboardd");
-		} else {
-				system("killall SpringBoard");
-		}
+		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("com.saurik.WinterBoard/Respring"), nil, nil, YES);
 }
 
 - (void)cancelChanges {

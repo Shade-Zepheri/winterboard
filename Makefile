@@ -1,4 +1,4 @@
-export TARGET = iphone:9.3
+export TARGET = iphone:9.3 #Making it iOS 8+ no ios 2.0 support
 
 CFLAGS = -fobjc-arc
 
