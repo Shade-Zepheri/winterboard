@@ -107,38 +107,6 @@ static struct MSFixClass { MSFixClass() {
 static bool IsWild_;
 static bool Four_($SBDockIconListView != nil);
 
-@interface NSObject (wb$SBIconAccessoryImage)
-+ (Class) _imageClassForIcon:(SBIcon *)icon location:(int)location;
-@end
-
-@interface NSDictionary (WinterBoard)
-- (UIColor *) wb$colorForKey:(NSString *)key;
-- (BOOL) wb$boolForKey:(NSString *)key;
-@end
-
-@implementation NSDictionary (WinterBoard)
-
-- (UIColor *) wb$colorForKey:(NSString *)key {
-    NSString *value = [self objectForKey:key];
-    if (value == nil)
-        return nil;
-    /* XXX: incorrect */
-    return nil;
-}
-
-- (BOOL) wb$boolForKey:(NSString *)key {
-    if (NSString *value = [self objectForKey:key])
-        return [value boolValue];
-    return false;
-}
-
-@end
-
-@interface _UIAssetManager : NSObject
-- (NSBundle *) bundle;
-- (NSString *) carFileName;
-@end
-
 static BOOL (*_GSFontGetUseLegacyFontMetrics)();
 #define $GSFontGetUseLegacyFontMetrics() \
     (_GSFontGetUseLegacyFontMetrics == NULL ? YES : _GSFontGetUseLegacyFontMetrics())
@@ -1563,76 +1531,6 @@ static CGSize NSString$sizeWithStyle$forWidth$(NSString *self, SEL _cmd, NSStrin
     return size;
 }
 
-static void SBInitialize() {
-    if (SummerBoard_) {
-        WBRename(SBApplication, pathForIcon, pathForIcon);
-        WBRename(SBApplicationIcon, icon, icon);
-        WBRename(SBApplicationIcon, generateIconImage:, generateIconImage$);
-    }
-
-    WBRename(SBBookmarkIcon, icon, icon);
-    WBRename(SBButtonBar, didMoveToSuperview, didMoveToSuperview);
-    WBRename(SBCalendarIconContentsView, drawRect:, drawRect$);
-    WBRename(SBIconBadge, initWithBadge:, initWithBadge$);
-    WBRename(SBIconController, noteNumberOfIconListsChanged, noteNumberOfIconListsChanged);
-
-    WBRename(SBWidgetApplicationIcon, icon, icon);
-
-    WBRename(SBDockIconListView, setFrame:, setFrame$);
-    MSHookMessage(object_getClass($SBDockIconListView), @selector(shouldShowNewDock), &$SBDockIconListView$shouldShowNewDock, &_SBDockIconListView$shouldShowNewDock);
-
-    if (kCFCoreFoundationVersionNumber < 600 || SummerBoard_)
-        WBRename(SBIconLabel, drawRect:, drawRect$);
-    else if (kCFCoreFoundationVersionNumber < 700) {
-        WBRename(SBIconLabel, buildLabelImage, buildLabelImage);
-    } else {
-        WBRename(SBIconLabelImageParameters, hash, hash);
-        WBRename($SBIconView, _labelImageParametersForIcon:location:, _labelImageParametersForIcon$location$);
-        WBRename(SBIconView, _labelImageParameters, _labelImageParameters);
-        WBRename($SBIconLabelImage, _drawLabelImageForParameters:, _drawLabelImageForParameters$);
-    }
-
-    WBRename(SBIconLabel, initWithSize:label:, initWithSize$label$);
-    WBRename(SBIconLabel, setInDock:, setInDock$);
-
-    WBRename(SBIconList, didMoveToSuperview, didMoveToSuperview);
-    WBRename(SBIconList, setFrame:, setFrame$);
-
-    WBRename(SBIconModel, cacheImageForIcon:, cacheImageForIcon$);
-    WBRename(SBIconModel, cacheImagesForIcon:, cacheImagesForIcon$);
-    WBRename(SBIconModel, getCachedImagedForIcon:, getCachedImagedForIcon$);
-    WBRename(SBIconModel, getCachedImagedForIcon:smallIcon:, getCachedImagedForIcon$smallIcon$);
-
-    if (kCFCoreFoundationVersionNumber < 800) {
-        WBRename(SBSearchView, initWithFrame:, initWithFrame$);
-        WBRename(SBSearchTableViewCell, drawRect:, drawRect$);
-        WBRename(SBSearchTableViewCell, initWithStyle:reuseIdentifier:, initWithStyle$reuseIdentifier$);
-    }
-
-    //WBRename(SBImageCache, initWithName:forImageWidth:imageHeight:initialCapacity:, initWithName$forImageWidth$imageHeight$initialCapacity$);
-
-    WBRename(SBAwayView, updateDesktopImage:, updateDesktopImage$);
-    if (kCFCoreFoundationVersionNumber >= 700)
-        WBRename(SBAwayView, _addSubview:positioned:relativeTo:, _addSubview$positioned$relativeTo$);
-
-    WBRename(SBStatusBarContentsView, didMoveToSuperview, didMoveToSuperview);
-    //WBRename(SBStatusBarContentsView, initWithStatusBar:mode:, initWithStatusBar$mode$);
-    //WBRename(SBStatusBarController, setStatusBarMode:orientation:duration:animation:, setStatusBarMode$orientation$duration$animation$);
-    WBRename(SBStatusBarController, setStatusBarMode:orientation:duration:fenceID:animation:, setStatusBarMode$orientation$duration$fenceID$animation$);
-    WBRename(SBStatusBarController, setStatusBarMode:orientation:duration:fenceID:animation:startTime:, setStatusBarMode$orientation$duration$fenceID$animation$startTime$);
-    WBRename(SBStatusBarOperatorNameView, operatorNameStyle, operatorNameStyle);
-    WBRename(SBStatusBarOperatorNameView, setOperatorName:fullSize:, setOperatorName$fullSize$);
-    WBRename(SBStatusBarTimeView, drawRect:, drawRect$);
-
-    if (SummerBoard_)
-        English_ = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SpringBoard.app/English.lproj/LocalizedApplicationNames.strings"];
-
-    if (kCFCoreFoundationVersionNumber >= 800) {
-        WBRename(NSString, drawInRect:withAttributes:, drawInRect$withAttributes$);
-        WBRename(NSString, boundingRectWithSize:options:attributes:context:, boundingRectWithSize$options$attributes$context$);
-    }
-}
-
 /*MSHook(int, open, const char *path, int oflag, mode_t mode) {
     int fd(_open(path, oflag, mode));
 
@@ -1805,27 +1703,7 @@ static void SBInitialize() {
     }
     // }}}
     // SpringBoard {{{
-    if (SpringBoard_) {
-        Wallpapers_ = [[NSArray arrayWithObjects:@"Wallpaper.mp4", @"Wallpaper@3x.png", @"Wallpaper@3x.jpg", @"Wallpaper@2x.png", @"Wallpaper@2x.jpg", @"Wallpaper.png", @"Wallpaper.jpg", @"Wallpaper.html", nil] retain];
-        Papered_ = $getTheme$(Wallpapers_) != nil;
-        Docked_ = $getTheme$([NSArray arrayWithObjects:@"Dock.png", nil]) != nil;
 
-        CFNotificationCenterAddObserver(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            NULL, &ChangeWallpaper, (CFStringRef) @"com.saurik.winterboard.lockbackground", NULL, CFNotificationSuspensionBehaviorCoalesce
-        );
-
-        if ($getTheme$([NSArray arrayWithObject:@"Wallpaper.mp4"]) != nil) {
-            NSBundle *MediaPlayer([NSBundle bundleWithPath:@"/System/Library/Frameworks/MediaPlayer.framework"]);
-            if (MediaPlayer != nil)
-                [MediaPlayer load];
-
-            $MPMoviePlayerController = objc_getClass("MPMoviePlayerController");
-            $MPVideoView = objc_getClass("MPVideoView");
-        }
-
-        SBInitialize();
-    }
     // }}}
     // UIKit {{{
     if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/UIKit.framework/UIKit")) {

@@ -11,7 +11,7 @@ endif
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Winterboard
-Winterboard_FILES = Library.mm WBMarkup.mm
+Winterboard_FILES = Library.xm WBMarkup.mm
 Winterboard_FRAMEWORKS = UIKit QuartzCore
 
 SUBPROJECTS = winterboardprefs

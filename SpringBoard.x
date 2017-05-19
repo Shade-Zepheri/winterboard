@@ -50,7 +50,6 @@ MSInstanceMessageHook0(id, SBUIController, init) {
         }
     }
 
-    UIView *_contentLayer(MSHookIvar<UIView *>(self, "_contentLayer"));
     UIView *_contentView(MSHookIvar<UIView *>(self, "_contentView"));
 
     UIView **player;
@@ -116,8 +115,8 @@ MSInstanceMessageHook0(id, SBUIController, init) {
 #elif UseMPMoviePlayerController
             NSURL *url([NSURL fileURLWithPath:path]);
             MPMoviePlayerController *controller = [[$MPMoviePlayerController alloc] initWithContentURL:url];
-	    controller.movieControlMode = MPMovieControlModeHidden;
-	    [controller play];
+            controller.movieControlMode = MPMovieControlModeHidden;
+            [controller play];
 #else
             MPVideoView *video = [[[$MPVideoView alloc] initWithFrame:[indirect bounds]] autorelease];
             [video setMovieWithPath:path];
@@ -273,6 +272,21 @@ static inline void respring_notification(CFNotificationCenterRef center, void *o
     if (!IN_SPRINGBOARD) {
         return;
     }
+
+    Wallpapers_ = [[NSArray arrayWithObjects:@"Wallpaper.mp4", @"Wallpaper@3x.png", @"Wallpaper@3x.jpg", @"Wallpaper@2x.png", @"Wallpaper@2x.jpg", @"Wallpaper.png", @"Wallpaper.jpg", @"Wallpaper.html", nil] retain];
+
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &ChangeWallpaper, (CFStringRef) @"com.saurik.winterboard.lockbackground", NULL, CFNotificationSuspensionBehaviorCoalesce);
+
+    if ($getTheme$([NSArray arrayWithObject:@"Wallpaper.mp4"]) != nil) {
+        NSBundle *MediaPlayer([NSBundle bundleWithPath:@"/System/Library/Frameworks/MediaPlayer.framework"]);
+        if (MediaPlayer != nil)
+            [MediaPlayer load];
+
+        $MPMoviePlayerController = %c(MPMoviePlayerController);
+        $MPVideoView = %c(MPVideoView);
+    }
+
+    SBInitialize();
 
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &respring_notification, CFSTR("com.saurik.WinterBoard/Respring"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 }

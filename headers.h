@@ -48,9 +48,7 @@
 #include "WBMarkup.h"
 #import <version.h>
 
-typedef struct {
-    WBStringDrawingState next;
-    unsigned count;
-    NSString *base;
-    NSString *info;
-} WBStringDrawingState;
+@interface _UIAssetManager : NSObject
+- (NSBundle *) bundle;
+- (NSString *) carFileName;
+@end
