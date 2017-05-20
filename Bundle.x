@@ -1,38 +1,41 @@
 #import "Bundle.h"
 
+static NSMutableDictionary *cachedBundles = nil;
+
 @implementation NSBundle (WinterBoard)
 
-+ (NSBundle *) _wb$bundleWithFile:(NSString *)path {
++ (NSBundle *)_wb$bundleWithFile:(NSString *)path {
     path = [path stringByDeletingLastPathComponent];
-    if (path == nil || [path length] == 0 || [path isEqualToString:@"/"])
+    if (!path || [path length] == 0 || [path isEqualToString:@"/"]) {
         return nil;
-
-    NSBundle *bundle;
-    @synchronized (Bundles_) {
-        bundle = [Bundles_ objectForKey:path];
     }
 
-    if (reinterpret_cast<id>(bundle) == [NSNull null])
-        return nil;
-    else if (bundle == nil) {
-        if ([Manager_ fileExistsAtPath:[path stringByAppendingPathComponent:@"Info.plist"]])
-            bundle = [NSBundle bundleWithPath:path];
-        if (bundle == nil)
-            bundle = [NSBundle _wb$bundleWithFile:path];
-        if (Debug_)
-            NSLog(@"WB:Debug:PathBundle(%@, %@)", path, bundle);
+    NSBundle *bundle = nil;
+    if (!cachedBundles) {
+        cachedBundles = [[NSMutableDictionary alloc] initWithCapacity:5];
+    }
 
-        @synchronized (Bundles_) {
-            [Bundles_ setObject:(bundle == nil ? [NSNull null] : reinterpret_cast<id>(bundle)) forKey:path];
+    bundle = [cachedBundles objectForKey:path];
+    if ((NSNull*)bundle == [NSNull null]) {
+        return nil;
+    } else if (!bundle) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:[path stringByAppendingPathComponent:@"Info.plist"]]) {
+            bundle = [NSBundle bundleWithPath:path];
         }
+        if (!bundle) {
+            bundle = [NSBundle _wb$bundleWithFile:path];
+        }
+        [cachedBundles setObject:bundle == nil ? [NSNull null] : bundle forKey:path];
     }
 
     return bundle;
 }
 
-+ (NSBundle *) wb$bundleWithFile:(NSString *)path {
-    if ([path hasPrefix:@"/Library/Themes"])
++ (NSBundle *)wb$bundleWithFile:(NSString *)path {
+    if ([path hasPrefix:@"/Library/Themes"]) {
         return nil;
+    }
+
     return [self _wb$bundleWithFile:path];
 }
 
@@ -41,18 +44,19 @@
 
 @implementation NSString (WinterBoard)
 
-- (NSString *) wb$themedPath {
-    if (Debug_)
-        NSLog(@"WB:Debug:Bypass(\"%@\")", self);
-
-    if (NSBundle *bundle = [NSBundle wb$bundleWithFile:self]) {
-        NSString *file([self stringByResolvingSymlinksInPath]);
-        NSString *prefix([[bundle bundlePath] stringByResolvingSymlinksInPath]);
+- (NSString *)wb$themedPath {
+    NSBundle *bundle = [NSBundle wb$bundleWithFile:self];
+    if (bundle) {
+        NSString *file = [self stringByResolvingSymlinksInPath];
+        NSString *prefix = [bundle.bundlePath stringByResolvingSymlinksInPath];
         if ([file hasPrefix:prefix]) {
-            NSUInteger length([prefix length]);
-            if (length != [file length])
-                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false))
+            NSUInteger length = [prefix length];
+            if (length != [file length]) {
+                NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false)
+                if (path) {
                     return path;
+                }
+            }
         }
     }
 
