@@ -1378,202 +1378,149 @@ static CGSize NSString$sizeWithStyle$forWidth$(NSString *self, SEL _cmd, NSStrin
     $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
     $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
 
-    NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
+    @autoreleasepool {
+        NSString *identifier([[NSBundle mainBundle] bundleIdentifier]);
+        SpringBoard_ = [identifier isEqualToString:@"com.apple.springboard"];
 
-    NSString *identifier([[NSBundle mainBundle] bundleIdentifier]);
-    SpringBoard_ = [identifier isEqualToString:@"com.apple.springboard"];
+        Manager_ = [[NSFileManager defaultManager] retain];
+        Themes_ = [[NSMutableArray alloc] initWithCapacity:8];
 
-    Manager_ = [[NSFileManager defaultManager] retain];
-    Themes_ = [[NSMutableArray alloc] initWithCapacity:8];
+        dlset(_GSFontGetUseLegacyFontMetrics, "GSFontGetUseLegacyFontMetrics");
 
-    dlset(_GSFontGetUseLegacyFontMetrics, "GSFontGetUseLegacyFontMetrics");
+        // Initialize IsWild_ {{{
+        size_t size;
+        sysctlbyname("hw.machine", NULL, &size, NULL, 0);
+        char *machine = new char[size];
 
-    // Initialize IsWild_ {{{
-    size_t size;
-    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-    char *machine = new char[size];
+        if (sysctlbyname("hw.machine", machine, &size, NULL, 0) == -1) {
+            perror("sysctlbyname(\"hw.machine\", ?)");
+            delete [] machine;
+            machine = NULL;
+        }
 
-    if (sysctlbyname("hw.machine", machine, &size, NULL, 0) == -1) {
-        perror("sysctlbyname(\"hw.machine\", ?)");
-        delete [] machine;
-        machine = NULL;
-    }
+        IsWild_ = machine != NULL && strncmp(machine, "iPad", 4) == 0;
+        // }}}
+        // Load Settings.plist {{{
 
-    IsWild_ = machine != NULL && strncmp(machine, "iPad", 4) == 0;
-    // }}}
-    // Load Settings.plist {{{
-    if (NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/User/Library/Preferences/com.saurik.WinterBoard.plist"]]) {
-        if (kCFCoreFoundationVersionNumber >= 1000)
-            SummerBoard_ = false;
-        else if (NSNumber *value = [settings objectForKey:@"SummerBoard"])
-            SummerBoard_ = [value boolValue];
-        else
-            SummerBoard_ = true;
+        // }}}
+        // Merge Info.plist {{{
 
-        if (NSNumber *value = [settings objectForKey:@"Debug"])
-            Debug_ = [value boolValue];
-        if (NSNumber *value = [settings objectForKey:@"RecordUI"])
-            UIDebug_ = [value boolValue];
+        // }}}
 
-        NSArray *themes([settings objectForKey:@"Themes"]);
-        if (themes == nil)
-            if (NSString *theme = [settings objectForKey:@"Theme"])
-                themes = [NSArray arrayWithObject:[NSDictionary dictionaryWithObjectsAndKeys:
-                    theme, @"Name",
-                    [NSNumber numberWithBool:true], @"Active",
-                nil]];
+        // AppSupport {{{
+        if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/AppSupport.framework/AppSupport")) {
+            NSArray *(*CPBitmapCreateImagesFromPath)(NSString *, CFTypeRef *, void *, void *);
+            msset(CPBitmapCreateImagesFromPath, image, "_CPBitmapCreateImagesFromPath");
+            MSHookFunction(CPBitmapCreateImagesFromPath, MSHake(CPBitmapCreateImagesFromPath));
+        }
+        // }}}
+        // AudioToolbox {{{
+        if (MSImageRef image = MSGetImageByName(AudioToolbox)) {
+            bool (*_Z24GetFileNameForThisActionmPcRb)(unsigned long, char *, bool &);
+            msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
+            MSHookFunction(_Z24GetFileNameForThisActionmPcRb, &$_Z24GetFileNameForThisActionmPcRb, &__Z24GetFileNameForThisActionmPcRb);
 
-        if (themes != nil)
-            for (NSDictionary *theme in themes) {
-                NSNumber *active([theme objectForKey:@"Active"]);
-                if (![active boolValue])
-                    continue;
-
-                NSString *name([theme objectForKey:@"Name"]);
-                if (name == nil)
-                    continue;
-
-                #define testForTheme(format...) \
-                    { \
-                        NSString *path = [NSString stringWithFormat:format]; \
-                        if ([Manager_ fileExistsAtPath:path]) { \
-                            [Themes_ addObject:path]; \
-                            continue; \
-                        } \
-                    }
-
-                testForTheme(@"/Library/Themes/%@.theme", name)
-                testForTheme(@"/Library/Themes/%@", name)
-                testForTheme(@"%@/Library/SummerBoard/Themes/%@", NSHomeDirectory(), name)
-
+        #ifdef __LP64__
+            bool (*_Z24GetFileNameForThisActionjPcjRb)(unsigned int, char *, unsigned int, bool &);
+            msset(_Z24GetFileNameForThisActionjPcjRb, image, "__Z24GetFileNameForThisActionjPcjRb");
+            MSHookFunction(_Z24GetFileNameForThisActionjPcjRb, &$_Z24GetFileNameForThisActionjPcjRb, &__Z24GetFileNameForThisActionjPcjRb);
+        #else
+            bool (*_Z24GetFileNameForThisActionmPcmRb)(unsigned long, char *, unsigned long, bool &);
+            msset(_Z24GetFileNameForThisActionmPcmRb, image, "__Z24GetFileNameForThisActionmPcmRb");
+            MSHookFunction(_Z24GetFileNameForThisActionmPcmRb, &$_Z24GetFileNameForThisActionmPcmRb, &__Z24GetFileNameForThisActionmPcmRb);
+        #endif
+        }
+        // }}}
+        // BackBoardServices {{{
+        if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/BackBoardServices.framework/BackBoardServices")) {
+            void (*BKSDisplayServicesSetSystemAppExitedImagePath)(NSString *path);
+            msset(BKSDisplayServicesSetSystemAppExitedImagePath, image, "_BKSDisplayServicesSetSystemAppExitedImagePath");
+            MSHookFunction(BKSDisplayServicesSetSystemAppExitedImagePath, MSHake(BKSDisplayServicesSetSystemAppExitedImagePath));
+        }
+        // }}}
+        // Foundation {{{
+        if (true) {
+            if (![identifier isEqualToString:@"com.apple.backupd"]) // XXX: rethink
+            MSHookFunction(CFBundleCopyResourceURL, MSHake(CFBundleCopyResourceURL));
+        }
+        // }}}
+        // GraphicsServices {{{
+        if (true) {
+            MSHookFunction(&GSFontCreateWithName, &$GSFontCreateWithName, &_GSFontCreateWithName);
+        }
+        // }}}
+        // ImageIO {{{
+        MSImageRef imageio = MSGetImageByName("/System/Library/Frameworks/ImageIO.framework/ImageIO");
+        if (imageio == NULL)
+            imageio = MSGetImageByName("/System/Library/PrivateFrameworks/ImageIO.framework/ImageIO");
+        if (MSImageRef image = imageio) {
+            void *(*CGImageReadCreateWithFile)(NSString *, int) = NULL;
+            if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
+                CGImageReadCreateWithFile = NULL;
+            else {
+                msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
+                MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
             }
-    }
-    // }}}
-    // Merge Info.plist {{{
-    Info_ = [[NSMutableDictionary dictionaryWithCapacity:16] retain];
 
-    for (NSString *theme in Themes_)
-        if (NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/Info.plist", theme]])
-            for (NSString *key in [info allKeys])
-                if ([Info_ objectForKey:key] == nil)
-                    [Info_ setObject:[info objectForKey:key] forKey:key];
-    // }}}
+            if (CGImageReadCreateWithFile == NULL) {
+                void *(*CGImageSourceCreateWithFile)(NSString *, NSDictionary *);
+                msset(CGImageSourceCreateWithFile, image, "_CGImageSourceCreateWithFile");
+                MSHookFunction(CGImageSourceCreateWithFile, MSHake(CGImageSourceCreateWithFile));
 
-    // AppSupport {{{
-    if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/AppSupport.framework/AppSupport")) {
-        NSArray *(*CPBitmapCreateImagesFromPath)(NSString *, CFTypeRef *, void *, void *);
-        msset(CPBitmapCreateImagesFromPath, image, "_CPBitmapCreateImagesFromPath");
-        MSHookFunction(CPBitmapCreateImagesFromPath, MSHake(CPBitmapCreateImagesFromPath));
-    }
-    // }}}
-    // AudioToolbox {{{
-    if (MSImageRef image = MSGetImageByName(AudioToolbox)) {
-        bool (*_Z24GetFileNameForThisActionmPcRb)(unsigned long, char *, bool &);
-        msset(_Z24GetFileNameForThisActionmPcRb, image, "__Z24GetFileNameForThisActionmPcRb");
-        MSHookFunction(_Z24GetFileNameForThisActionmPcRb, &$_Z24GetFileNameForThisActionmPcRb, &__Z24GetFileNameForThisActionmPcRb);
-
-#ifdef __LP64__
-        bool (*_Z24GetFileNameForThisActionjPcjRb)(unsigned int, char *, unsigned int, bool &);
-        msset(_Z24GetFileNameForThisActionjPcjRb, image, "__Z24GetFileNameForThisActionjPcjRb");
-        MSHookFunction(_Z24GetFileNameForThisActionjPcjRb, &$_Z24GetFileNameForThisActionjPcjRb, &__Z24GetFileNameForThisActionjPcjRb);
-#else
-        bool (*_Z24GetFileNameForThisActionmPcmRb)(unsigned long, char *, unsigned long, bool &);
-        msset(_Z24GetFileNameForThisActionmPcmRb, image, "__Z24GetFileNameForThisActionmPcmRb");
-        MSHookFunction(_Z24GetFileNameForThisActionmPcmRb, &$_Z24GetFileNameForThisActionmPcmRb, &__Z24GetFileNameForThisActionmPcmRb);
-#endif
-    }
-    // }}}
-    // BackBoardServices {{{
-    if (MSImageRef image = MSGetImageByName("/System/Library/PrivateFrameworks/BackBoardServices.framework/BackBoardServices")) {
-        void (*BKSDisplayServicesSetSystemAppExitedImagePath)(NSString *path);
-        msset(BKSDisplayServicesSetSystemAppExitedImagePath, image, "_BKSDisplayServicesSetSystemAppExitedImagePath");
-        MSHookFunction(BKSDisplayServicesSetSystemAppExitedImagePath, MSHake(BKSDisplayServicesSetSystemAppExitedImagePath));
-    }
-    // }}}
-    // Foundation {{{
-    if (true) {
-        if (![identifier isEqualToString:@"com.apple.backupd"]) // XXX: rethink
-        MSHookFunction(CFBundleCopyResourceURL, MSHake(CFBundleCopyResourceURL));
-    }
-    // }}}
-    // GraphicsServices {{{
-    if (true) {
-        MSHookFunction(&GSFontCreateWithName, &$GSFontCreateWithName, &_GSFontCreateWithName);
-    }
-    // }}}
-    // ImageIO {{{
-    MSImageRef imageio = MSGetImageByName("/System/Library/Frameworks/ImageIO.framework/ImageIO");
-    if (imageio == NULL)
-        imageio = MSGetImageByName("/System/Library/PrivateFrameworks/ImageIO.framework/ImageIO");
-    if (MSImageRef image = imageio) {
-        void *(*CGImageReadCreateWithFile)(NSString *, int) = NULL;
-        if (kCFCoreFoundationVersionNumber > 700) // XXX: iOS 6.x
-            CGImageReadCreateWithFile = NULL;
-        else {
-            msset(CGImageReadCreateWithFile, image, "_CGImageReadCreateWithFile");
-            MSHookFunction(CGImageReadCreateWithFile, MSHake(CGImageReadCreateWithFile));
+                void *(*CGImageSourceCreateWithURL)(NSURL *, NSDictionary *);
+                msset(CGImageSourceCreateWithURL, image, "_CGImageSourceCreateWithURL");
+                MSHookFunction(CGImageSourceCreateWithURL, MSHake(CGImageSourceCreateWithURL));
+            }
         }
+        // }}}
+        // SpringBoard {{{
 
-        if (CGImageReadCreateWithFile == NULL) {
-            void *(*CGImageSourceCreateWithFile)(NSString *, NSDictionary *);
-            msset(CGImageSourceCreateWithFile, image, "_CGImageSourceCreateWithFile");
-            MSHookFunction(CGImageSourceCreateWithFile, MSHake(CGImageSourceCreateWithFile));
+        // }}}
+        // UIKit {{{
+        if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/UIKit.framework/UIKit")) {
+        #ifdef __LP64__
+            class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v40@0:8{CGPoint=dd}16@32");
+            class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v56@0:8{CGRect={CGSize=dd}{CGSize=dd}}16@48");
+            class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=dd}32@0:8@16d24");
+        #else
+            class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v20@0:4{CGPoint=ff}8@16");
+            class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
+            class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
+        #endif
 
-            void *(*CGImageSourceCreateWithURL)(NSURL *, NSDictionary *);
-            msset(CGImageSourceCreateWithURL, image, "_CGImageSourceCreateWithURL");
-            MSHookFunction(CGImageSourceCreateWithURL, MSHake(CGImageSourceCreateWithURL));
+            WBHookSymbol(image, _UIKitBundle);
+
+            if (kCFCoreFoundationVersionNumber < 700)
+                MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
+
+            WBHookSymbol(image, _UIApplicationImageWithName);
+            MSHookFunction(_UIApplicationImageWithName, MSHake(_UIApplicationImageWithName));
+
+            WBHookSymbol(image, _UIImageWithNameInDomain);
+            MSHookFunction(_UIImageWithNameInDomain, MSHake(_UIImageWithNameInDomain));
+
+            SEL includeEmoji(@selector(_legacy_drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:));
+            if (![@"" respondsToSelector:includeEmoji])
+                includeEmoji = @selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:);
+            MSHookMessage($NSString, includeEmoji, MSHake(NSString$drawAtPoint$forWidth$withFont$lineBreakMode$letterSpacing$includeEmoji$));
+
+            SEL letterSpacing(@selector(_legacy_sizeWithFont:forWidth:lineBreakMode:letterSpacing:));
+            if (![@"" respondsToSelector:letterSpacing])
+                letterSpacing = @selector(sizeWithFont:forWidth:lineBreakMode:letterSpacing:);
+            MSHookMessage($NSString, letterSpacing, MSHake(NSString$sizeWithFont$forWidth$lineBreakMode$letterSpacing$));
+
+            SEL sizeWithFont(@selector(_legacy_sizeWithFont:));
+            if (![@"" respondsToSelector:sizeWithFont])
+                sizeWithFont = @selector(sizeWithFont:);
+            MSHookMessage($NSString, sizeWithFont, MSHake(NSString$sizeWithFont$));
+
+            MSHookMessage($NSAttributedString, @selector(drawAtPoint:), MSHake(NSAttributedString$drawAtPoint$));
+            MSHookMessage($NSAttributedString, @selector(boundingRectWithSize:options:context:), MSHake(NSAttributedString$boundingRectWithSize$options$context$));
         }
+        // }}}
+
+        //MSHookFunction(reinterpret_cast<int (*)(const char *, int, mode_t)>(&open), MSHake(open));
     }
-    // }}}
-    // SpringBoard {{{
-
-    // }}}
-    // UIKit {{{
-    if (MSImageRef image = MSGetImageByName("/System/Library/Frameworks/UIKit.framework/UIKit")) {
-#ifdef __LP64__
-        class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v40@0:8{CGPoint=dd}16@32");
-        class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v56@0:8{CGRect={CGSize=dd}{CGSize=dd}}16@48");
-        class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=dd}32@0:8@16d24");
-#else
-        class_addMethod($NSString, @selector(drawAtPoint:withStyle:), (IMP) &NSString$drawAtPoint$withStyle$, "v20@0:4{CGPoint=ff}8@16");
-        class_addMethod($NSString, @selector(drawInRect:withStyle:), (IMP) &NSString$drawInRect$withStyle$, "v28@0:4{CGRect={CGSize=ff}{CGSize=ff}}8@24");
-        class_addMethod($NSString, @selector(sizeWithStyle:forWidth:), (IMP) &NSString$sizeWithStyle$forWidth$, "{CGSize=ff}16@0:4@8f12");
-#endif
-
-        WBHookSymbol(image, _UIKitBundle);
-
-        if (kCFCoreFoundationVersionNumber < 700)
-            MSHookFunction(_UIImageWithName, MSHake(_UIImageWithName));
-
-        WBHookSymbol(image, _UIApplicationImageWithName);
-        MSHookFunction(_UIApplicationImageWithName, MSHake(_UIApplicationImageWithName));
-
-        WBHookSymbol(image, _UIImageWithNameInDomain);
-        MSHookFunction(_UIImageWithNameInDomain, MSHake(_UIImageWithNameInDomain));
-
-        SEL includeEmoji(@selector(_legacy_drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:));
-        if (![@"" respondsToSelector:includeEmoji])
-            includeEmoji = @selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:);
-        MSHookMessage($NSString, includeEmoji, MSHake(NSString$drawAtPoint$forWidth$withFont$lineBreakMode$letterSpacing$includeEmoji$));
-
-        SEL letterSpacing(@selector(_legacy_sizeWithFont:forWidth:lineBreakMode:letterSpacing:));
-        if (![@"" respondsToSelector:letterSpacing])
-            letterSpacing = @selector(sizeWithFont:forWidth:lineBreakMode:letterSpacing:);
-        MSHookMessage($NSString, letterSpacing, MSHake(NSString$sizeWithFont$forWidth$lineBreakMode$letterSpacing$));
-
-        SEL sizeWithFont(@selector(_legacy_sizeWithFont:));
-        if (![@"" respondsToSelector:sizeWithFont])
-            sizeWithFont = @selector(sizeWithFont:);
-        MSHookMessage($NSString, sizeWithFont, MSHake(NSString$sizeWithFont$));
-
-        MSHookMessage($NSAttributedString, @selector(drawAtPoint:), MSHake(NSAttributedString$drawAtPoint$));
-        MSHookMessage($NSAttributedString, @selector(boundingRectWithSize:options:context:), MSHake(NSAttributedString$boundingRectWithSize$options$context$));
-    }
-    // }}}
-
-    //MSHookFunction(reinterpret_cast<int (*)(const char *, int, mode_t)>(&open), MSHake(open));
-
-    [pool release];
 }
 
 ///Yay 2745 lines to convert

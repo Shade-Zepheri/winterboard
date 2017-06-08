@@ -30,172 +30,8 @@ MSHook(UIImage *, SBApplicationIcon$generateIconImage$, SBApplicationIcon *self,
 */
 
 // Oh FFS Saurik y u do dis
-MSInstanceMessageHook0(id, SBUIController, init) {
-    self = MSOldCall();
-    if (self == nil)
-        return nil;
-
-    NSString *paper($getTheme$(Wallpapers_));
-    if (paper != nil)
-        paper = [paper stringByDeletingLastPathComponent];
-
-    if (Debug_)
-        NSLog(@"WB:Debug:Info = %@", [Info_ description]);
-
-    if (paper != nil) {
-        UIImageView *_wallpaperView(MSHookIvar<UIImageView *>(self, "_wallpaperView"));
-        if (_wallpaperView) {
-            [_wallpaperView removeFromSuperview];
-            [_wallpaperView release];
-            _wallpaperView = nil;
-        }
-    }
-
-    UIView *_contentView(MSHookIvar<UIView *>(self, "_contentView"));
-
-    UIView **player;
-    if (_contentLayer) {
-      player = &_contentLayer;
-    } else if (_contentView) {
-      player = &_contentView;
-    } else {
-        player = NULL;
-    }
-    UIView *layer(player == NULL ? nil : *player);
-
-    UIWindow *window([[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]]);
-    UIView *content([[[UIView alloc] initWithFrame:[window frame]] autorelease]);
-    [window setContentView:content];
-
-    UIWindow *&_window(MSHookIvar<UIWindow *>(self, "_window"));
-    [window setBackgroundColor:[_window backgroundColor]];
-    [_window setBackgroundColor:[UIColor clearColor]];
-
-    [window setLevel:-1000];
-    [window setHidden:NO];
-
-    /*if (player != NULL)
-        *player = content;*/
-
-    [content setBackgroundColor:[layer backgroundColor]];
-    [layer setBackgroundColor:[UIColor clearColor]];
-
-    UIView *indirect;
-    if (!SummerBoard_ || !IsWild_)
-        indirect = content;
-    else {
-        CGRect bounds([content bounds]);
-        bounds.origin.y = -30;
-        indirect = [[[UIView alloc] initWithFrame:bounds] autorelease];
-        [content addSubview:indirect];
-        [indirect zoomToScale:2.4];
-    }
-
-    if (paper != nil) {
-        NSArray *themes([NSArray arrayWithObject:paper]);
-
-        if (NSString *path = $getTheme$([NSArray arrayWithObject:@"Wallpaper.mp4"], themes)) {
-#if UseAVController
-            NSError *error;
-
-            static AVController *controller_(nil);
-            if (controller_ == nil) {
-                AVQueue *queue([AVQueue avQueue]);
-                controller_ = [[AVController avControllerWithQueue:queue error:&error] retain];
-            }
-
-            AVQueue *queue([controller_ queue]);
-
-            UIView *video([[[UIView alloc] initWithFrame:[indirect bounds]] autorelease]);
-            [controller_ setLayer:[video _layer]];
-
-            AVItem *item([[[AVItem alloc] initWithPath:path error:&error] autorelease]);
-            [queue appendItem:item error:&error];
-
-            [controller_ play:&error];
-#elif UseMPMoviePlayerController
-            NSURL *url([NSURL fileURLWithPath:path]);
-            MPMoviePlayerController *controller = [[$MPMoviePlayerController alloc] initWithContentURL:url];
-            controller.movieControlMode = MPMovieControlModeHidden;
-            [controller play];
-#else
-            MPVideoView *video = [[[$MPVideoView alloc] initWithFrame:[indirect bounds]] autorelease];
-            [video setMovieWithPath:path];
-            [video setRepeatMode:1];
-            [video setRepeatGap:-1];
-            [video playFromBeginning];;
-#endif
-
-            [indirect addSubview:video];
-        }
-
-        if (NSString *path = $getTheme$($useScale$([NSArray arrayWithObjects:@"Wallpaper.png", @"Wallpaper.jpg", nil]), themes)) {
-            if (UIImage *image = $getImage$(path)) {
-                WallpaperFile_ = [path retain];
-                WallpaperImage_ = [[UIImageView alloc] initWithImage:image];
-                if (NSNumber *number = [Info_ objectForKey:@"WallpaperAlpha"])
-                    [WallpaperImage_ setAlpha:[number floatValue]];
-                [indirect addSubview:WallpaperImage_];
-            }
-        }
-
-        if (NSString *path = $getTheme$([NSArray arrayWithObject:@"Wallpaper.html"], themes)) {
-            CGRect bounds = [indirect bounds];
-
-            UIWebDocumentView *view([[[$UIWebDocumentView alloc] initWithFrame:bounds] autorelease]);
-            [view setAutoresizes:true];
-
-            WallpaperPage_ = [view retain];
-            WallpaperURL_ = [[NSURL fileURLWithPath:path] retain];
-
-            [WallpaperPage_ loadRequest:[NSURLRequest requestWithURL:WallpaperURL_]];
-
-            [view setBackgroundColor:[UIColor clearColor]];
-            if ([view respondsToSelector:@selector(setDrawsBackground:)])
-                [view setDrawsBackground:NO];
-            [[view webView] setDrawsBackground:NO];
-
-            [indirect addSubview:view];
-        }
-    }
-
-    for (size_t i(0), e([Themes_ count]); i != e; ++i) {
-        NSString *theme = [Themes_ objectAtIndex:(e - i - 1)];
-        NSString *html = [theme stringByAppendingPathComponent:@"Widget.html"];
-        if ([Manager_ fileExistsAtPath:html]) {
-            CGRect bounds = [indirect bounds];
-
-            UIWebDocumentView *view([[[$UIWebDocumentView alloc] initWithFrame:bounds] autorelease]);
-            [view setAutoresizes:true];
-
-            NSURL *url = [NSURL fileURLWithPath:html];
-            [view loadRequest:[NSURLRequest requestWithURL:url]];
-
-            [view setBackgroundColor:[UIColor clearColor]];
-            if ([view respondsToSelector:@selector(setDrawsBackground:)])
-                [view setDrawsBackground:NO];
-            [[view webView] setDrawsBackground:NO];
-
-            [indirect addSubview:view];
-        }
-    }
-
-    return self;
-}
-
-MSInstanceMessageHook0(void, SBIconContentView, layoutSubviews) {
-    MSOldCall();
-
-    if (SBIconController *controller = [$SBIconController sharedInstance]) {
-        UIView *&_dockContainerView(MSHookIvar<UIView *>(controller, "_dockContainerView"));
-        if (_dockContainerView) {
-          [[_dockContainerView superview] bringSubviewToFront:_dockContainerView];
-        }
-    }
-}
-
 static bool wb$inDock(id parameters) {
-    return [$objc_getAssociatedObject(parameters, @selector(wb$inDock)) boolValue];
+    return [objc_getAssociatedObject(parameters, @selector(wb$inDock)) boolValue];
 }
 
 MSInstanceMessage0(NSUInteger, SBIconLabelImageParameters, hash) {
@@ -206,7 +42,7 @@ MSInstanceMessage0(id, SBIconView, _labelImageParameters) {
     if (id parameters = MSOldCall()) {
         int &location(MSHookIvar<int>(self, "_iconLocation"));
         if (location) {
-            $objc_setAssociatedObject(parameters, @selector(wb$inDock), [NSNumber numberWithBool:(location == 3)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(parameters, @selector(wb$inDock), [NSNumber numberWithBool:(location == 3)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         }
         return parameters;
     } return nil;
@@ -304,7 +140,119 @@ MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, 
 - (instancetype)init {
     orig = %orig;
     if (orig) {
+      NSString *paper($getTheme$(Wallpapers_));
+      if (paper != nil)
+          paper = [paper stringByDeletingLastPathComponent];
 
+      if (Debug_)
+          NSLog(@"WB:Debug:Info = %@", [Info_ description]);
+
+      if (paper != nil) {
+          UIImageView *_wallpaperView(MSHookIvar<UIImageView *>(self, "_wallpaperView"));
+          if (_wallpaperView) {
+              [_wallpaperView removeFromSuperview];
+              [_wallpaperView release];
+              _wallpaperView = nil;
+          }
+      }
+
+      UIView *_contentView(MSHookIvar<UIView *>(self, "_contentView"));
+
+      UIView **player;
+      if (_contentLayer) {
+        player = &_contentLayer;
+      } else if (_contentView) {
+        player = &_contentView;
+      } else {
+          player = NULL;
+      }
+      UIView *layer(player == NULL ? nil : *player);
+
+      UIWindow *window([[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]]);
+      UIView *content([[[UIView alloc] initWithFrame:[window frame]] autorelease]);
+      [window setContentView:content];
+
+      UIWindow *&_window(MSHookIvar<UIWindow *>(self, "_window"));
+      [window setBackgroundColor:[_window backgroundColor]];
+      [_window setBackgroundColor:[UIColor clearColor]];
+
+      [window setLevel:-1000];
+      [window setHidden:NO];
+
+      /*if (player != NULL)
+          *player = content;*/
+
+      [content setBackgroundColor:[layer backgroundColor]];
+      [layer setBackgroundColor:[UIColor clearColor]];
+
+      UIView *indirect;
+      if (!SummerBoard_ || !IsWild_)
+          indirect = content;
+      else {
+          CGRect bounds([content bounds]);
+          bounds.origin.y = -30;
+          indirect = [[[UIView alloc] initWithFrame:bounds] autorelease];
+          [content addSubview:indirect];
+          [indirect zoomToScale:2.4];
+      }
+
+      if (paper != nil) {
+          NSArray *themes([NSArray arrayWithObject:paper]);
+
+          if (NSString *path = $getTheme$([NSArray arrayWithObject:@"Wallpaper.mp4"], themes)) {
+              [indirect addSubview:video];
+          }
+
+          if (NSString *path = $getTheme$($useScale$([NSArray arrayWithObjects:@"Wallpaper.png", @"Wallpaper.jpg", nil]), themes)) {
+              if (UIImage *image = $getImage$(path)) {
+                  WallpaperFile_ = [path retain];
+                  WallpaperImage_ = [[UIImageView alloc] initWithImage:image];
+                  if (NSNumber *number = [Info_ objectForKey:@"WallpaperAlpha"])
+                      [WallpaperImage_ setAlpha:[number floatValue]];
+                  [indirect addSubview:WallpaperImage_];
+              }
+          }
+
+          if (NSString *path = $getTheme$([NSArray arrayWithObject:@"Wallpaper.html"], themes)) {
+              CGRect bounds = [indirect bounds];
+
+              UIWebDocumentView *view([[[$UIWebDocumentView alloc] initWithFrame:bounds] autorelease]);
+              [view setAutoresizes:true];
+
+              WallpaperPage_ = [view retain];
+              WallpaperURL_ = [[NSURL fileURLWithPath:path] retain];
+
+              [WallpaperPage_ loadRequest:[NSURLRequest requestWithURL:WallpaperURL_]];
+
+              [view setBackgroundColor:[UIColor clearColor]];
+              if ([view respondsToSelector:@selector(setDrawsBackground:)])
+                  [view setDrawsBackground:NO];
+              [[view webView] setDrawsBackground:NO];
+
+              [indirect addSubview:view];
+          }
+      }
+
+      for (size_t i(0), e([Themes_ count]); i != e; ++i) {
+          NSString *theme = [Themes_ objectAtIndex:(e - i - 1)];
+          NSString *html = [theme stringByAppendingPathComponent:@"Widget.html"];
+          if ([Manager_ fileExistsAtPath:html]) {
+              CGRect bounds = [indirect bounds];
+
+              UIWebDocumentView *view([[[$UIWebDocumentView alloc] initWithFrame:bounds] autorelease]);
+              [view setAutoresizes:true];
+
+              NSURL *url = [NSURL fileURLWithPath:html];
+              [view loadRequest:[NSURLRequest requestWithURL:url]];
+
+              [view setBackgroundColor:[UIColor clearColor]];
+              if ([view respondsToSelector:@selector(setDrawsBackground:)])
+                  [view setDrawsBackground:NO];
+              [[view webView] setDrawsBackground:NO];
+
+              [indirect addSubview:view];
+          }
+      }
     }
 
     return orig;
