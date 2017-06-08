@@ -25,7 +25,7 @@ static NSMutableDictionary *cachedBundles = nil;
         if (!bundle) {
             bundle = [NSBundle _wb$bundleWithFile:path];
         }
-        [cachedBundles setObject:bundle == nil ? [NSNull null] : bundle forKey:path];
+        [cachedBundles setObject:!bundle ? [NSNull null] : bundle forKey:path];
     }
 
     return bundle;
@@ -64,3 +64,29 @@ static NSMutableDictionary *cachedBundles = nil;
 }
 
 @end
+
+
+%hook NSBundle
+- (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName {
+  NSString *identifier = [self bundleIdentifier];
+  NSLocale *locale = [NSLocale currentLocale];
+  NSString *language = [locale objectForKey:NSLocaleLanguageCode];
+  NSString *file = table == nil ? @"Localizable" : table;
+  NSString *name = [NSString stringWithFormat:@"%@:%@", identifier, file];
+  NSDictionary *strings;
+  if ((strings = [Strings_ objectForKey:name]) != nil) {
+      if (static_cast<id>(strings) != [NSNull null]) strings:
+          if (NSString *value = [strings objectForKey:key])
+              return value;
+  } else if (NSString *path = $pathForFile$inBundle$([NSString stringWithFormat:@"%@.lproj/%@.strings",
+      language, file
+  ], self, false)) {
+      if ((strings = [[NSDictionary alloc] initWithContentsOfFile:path]) != nil) {
+          [Strings_ setObject:[strings autorelease] forKey:name];
+          goto strings;
+      } else goto null;
+  } else null:
+      [Strings_ setObject:[NSNull null] forKey:name];
+  return %orig(key, value, table);
+}
+%end

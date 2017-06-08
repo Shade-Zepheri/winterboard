@@ -29,6 +29,7 @@ MSHook(UIImage *, SBApplicationIcon$generateIconImage$, SBApplicationIcon *self,
 }
 */
 
+// Oh FFS Saurik y u do dis
 MSInstanceMessageHook0(id, SBUIController, init) {
     self = MSOldCall();
     if (self == nil)
@@ -227,11 +228,50 @@ MSClassMessage1(UIImage *, SBIconLabelImage, _drawLabelImageForParameters, id, p
     return image;
 }
 
+MSClassMessageHook2(id, SBIconBadgeView, checkoutAccessoryImagesForIcon,location, id, icon, int, location) {
+    WBStringDrawingState badgeState = {NULL, 0, @""
+    , @"BadgeStyle"};
+
+    stringDrawingState_ = &badgeState;
+
+    id images(MSOldCall(icon, location));
+
+    stringDrawingState_ = NULL;
+    return images;
+}
+
+MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, int, type) {
+    WBStringDrawingState dayState = {NULL, unsigned(kCFCoreFoundationVersionNumber >= 1200 ? 3 : 2), @""
+        // XXX: this is only correct on an iPod dock
+        "text-shadow: rgba(0, 0, 0, 0.2) -1px -1px 2px;"
+    , @"CalendarIconDayStyle"};
+
+    unsigned skips;
+    if (kCFCoreFoundationVersionNumber < 800)
+        skips = 7;
+    else if (kCFCoreFoundationVersionNumber < 1200)
+        skips = 16;
+    else
+        skips = 7;
+
+    WBStringDrawingState skipState = {&dayState, skips, nil, nil};
+
+    WBStringDrawingState dateState = {&skipState, 2, @""
+    , @"CalendarIconDateStyle"};
+
+    stringDrawingState_ = &dateState;
+
+    UIImage *image(MSOldCall(type));
+
+    stringDrawingState_ = NULL;
+    return image;
+}
+
 %hook SBSearchTableViewCell
 - (instancetype)initWithStyle:(long long)arg1 reuseIdentifier:(id)arg2 {
     orig = %orig;
     if (orig) {
-        [self setBackgroundColor:[UIColor clearColor]];
+        self.backgroundColor = [UIColor clearColor];
     }
 
     return orig;
@@ -240,9 +280,9 @@ MSClassMessage1(UIImage *, SBIconLabelImage, _drawLabelImageForParameters, id, p
 
 %hook SBApplicationIcon
 - (id)generateIconImage:(int)arg1 {
-    if (type == 2)
+    if (type == 2) {
         if (![Info_ wb$boolForKey:@"ComposeStoreIcons"]) {
-            if (NSString *path = $pathForIcon$([self application]))
+            if (NSString *path = $pathForIcon$([self application])) {
                 if (UIImage *image = [UIImage imageWithContentsOfFile:path]) {
                     CGFloat width;
                     if ([%c(SBIcon) respondsToSelector:@selector(defaultIconImageSize)]) {
@@ -250,14 +290,26 @@ MSClassMessage1(UIImage *, SBIconLabelImage, _drawLabelImageForParameters, id, p
                     } else {
                         width = 59;
                     }
-                return width == 59 ? image : [image _imageScaledToProportion:(width / 59.0) interpolationQuality:5];
+                    return width == 59 ? image : [image _imageScaledToProportion:(width / 59.0) interpolationQuality:5];
+                }
             }
+        }
     }
 
     return %orig;
 }
 %end
 
+%hook SBUIController
+- (instancetype)init {
+    orig = %orig;
+    if (orig) {
+
+    }
+
+    return orig;
+}
+%end
 
 static inline void respring_notification(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
     if (IS_IOS_OR_NEWER(iOS_9_3)) {
@@ -285,8 +337,6 @@ static inline void respring_notification(CFNotificationCenterRef center, void *o
         $MPMoviePlayerController = %c(MPMoviePlayerController);
         $MPVideoView = %c(MPVideoView);
     }
-
-    SBInitialize();
 
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, &respring_notification, CFSTR("com.saurik.WinterBoard/Respring"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 }

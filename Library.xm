@@ -354,74 +354,8 @@ static NSString *$pathForIcon$(SBApplication *self, NSString *suffix = @"") {
 }
 
 // -[NSBundle wb$bundleWithFile] {{{
-@interface NSBundle (WinterBoard)
-+ (NSBundle *) wb$bundleWithFile:(NSString *)path;
-@end
-
-@implementation NSBundle (WinterBoard)
-
-+ (NSBundle *) _wb$bundleWithFile:(NSString *)path {
-    path = [path stringByDeletingLastPathComponent];
-    if (path == nil || [path length] == 0 || [path isEqualToString:@"/"])
-        return nil;
-
-    NSBundle *bundle;
-    @synchronized (Bundles_) {
-        bundle = [Bundles_ objectForKey:path];
-    }
-
-    if (reinterpret_cast<id>(bundle) == [NSNull null])
-        return nil;
-    else if (bundle == nil) {
-        if ([Manager_ fileExistsAtPath:[path stringByAppendingPathComponent:@"Info.plist"]])
-            bundle = [NSBundle bundleWithPath:path];
-        if (bundle == nil)
-            bundle = [NSBundle _wb$bundleWithFile:path];
-        if (Debug_)
-            NSLog(@"WB:Debug:PathBundle(%@, %@)", path, bundle);
-
-        @synchronized (Bundles_) {
-            [Bundles_ setObject:(bundle == nil ? [NSNull null] : reinterpret_cast<id>(bundle)) forKey:path];
-        }
-    }
-
-    return bundle;
-}
-
-+ (NSBundle *) wb$bundleWithFile:(NSString *)path {
-    if ([path hasPrefix:@"/Library/Themes"])
-        return nil;
-    return [self _wb$bundleWithFile:path];
-}
-
-@end
 // }}}
 // -[NSString wb$themedPath] {{{
-@interface NSString (WinterBoard)
-- (NSString *) wb$themedPath;
-@end
-
-@implementation NSString (WinterBoard)
-
-- (NSString *) wb$themedPath {
-    if (Debug_)
-        NSLog(@"WB:Debug:Bypass(\"%@\")", self);
-
-    if (NSBundle *bundle = [NSBundle wb$bundleWithFile:self]) {
-        NSString *file([self stringByResolvingSymlinksInPath]);
-        NSString *prefix([[bundle bundlePath] stringByResolvingSymlinksInPath]);
-        if ([file hasPrefix:prefix]) {
-            NSUInteger length([prefix length]);
-            if (length != [file length])
-                if (NSString *path = $pathForFile$inBundle$([file substringFromIndex:(length + 1)], bundle, false))
-                    return path;
-        }
-    }
-
-    return self;
-}
-
-@end
 // }}}
 
 void WBLogRect(const char *tag, struct CGRect rect) {
@@ -833,84 +767,6 @@ MSInstanceMessage1(CGSize, NSString, sizeWithFont, UIFont *, font) {
     return [self sizeWithStyle:[NSString stringWithFormat:@"%@;%@;%@;%@", [font markupDescription], WBColorMarkup(), base, info] forWidth:65535];
 }
 
-MSClassMessageHook2(id, SBIconBadgeView, checkoutAccessoryImagesForIcon,location, id, icon, int, location) {
-    WBStringDrawingState badgeState = {NULL, 0, @""
-    , @"BadgeStyle"};
-
-    stringDrawingState_ = &badgeState;
-
-    id images(MSOldCall(icon, location));
-
-    stringDrawingState_ = NULL;
-    return images;
-}
-
-MSClassMessageHook2(UIImage *, SBIconAccessoryImage, checkoutAccessoryImageForIcon,location, id, icon, int, location) {
-    if ([self _imageClassForIcon:icon location:location] != $SBIconBadgeImage)
-        return MSOldCall(icon, location);
-
-    WBStringDrawingState badgeState = {NULL, 0, @""
-    , @"BadgeStyle"};
-
-    stringDrawingState_ = &badgeState;
-
-    UIImage *image(MSOldCall(icon, location));
-
-    stringDrawingState_ = NULL;
-    return image;
-}
-
-MSInstanceMessageHook1(UIImage *, SBIconBadgeFactory, checkoutBadgeImageForText, NSString *, text) {
-    WBStringDrawingState badgeState = {NULL, 0, @""
-    , @"BadgeStyle"};
-
-    stringDrawingState_ = &badgeState;
-
-    UIImage *image(MSOldCall(text));
-
-    stringDrawingState_ = NULL;
-    return image;
-}
-
-MSInstanceMessageHook1(UIImage *, SBCalendarApplicationIcon, generateIconImage, int, type) {
-    WBStringDrawingState dayState = {NULL, unsigned(kCFCoreFoundationVersionNumber >= 1200 ? 3 : 2), @""
-        // XXX: this is only correct on an iPod dock
-        "text-shadow: rgba(0, 0, 0, 0.2) -1px -1px 2px;"
-    , @"CalendarIconDayStyle"};
-
-    unsigned skips;
-    if (kCFCoreFoundationVersionNumber < 800)
-        skips = 7;
-    else if (kCFCoreFoundationVersionNumber < 1200)
-        skips = 16;
-    else
-        skips = 7;
-
-    WBStringDrawingState skipState = {&dayState, skips, nil, nil};
-
-    WBStringDrawingState dateState = {&skipState, 2, @""
-    , @"CalendarIconDateStyle"};
-
-    stringDrawingState_ = &dateState;
-
-    UIImage *image(MSOldCall(type));
-
-    stringDrawingState_ = NULL;
-    return image;
-}
-
-MSInstanceMessageHook1(UIImage *, UIStatusBarTimeItemView, contentsImageForStyle, int, style) {
-    WBStringDrawingState timeState = {NULL, 0, @""
-    , @"TimeStyle"};
-
-    stringDrawingState_ = &timeState;
-
-    UIImage *image(MSOldCall(style));
-
-    stringDrawingState_ = NULL;
-    return image;
-}
-
 // %hook -[{NavigationBar,Toolbar} setBarStyle:] {{{
 void $setBarStyle$_(NSString *name, int &style) {
     if (Debug_)
@@ -973,16 +829,6 @@ _finline UIImage *WBCacheImage(const Modified_ &modified, const Original_ &origi
         image = $getImage$(path);
     [Images_ setObject:(image == nil ? [NSNull null] : reinterpret_cast<id>(image)) forKey:key];
     return image == nil ? original() : image;
-}
-
-static UIImage *$getDefaultDesktopImage$() {
-    if (NSString *path = $getTheme$($useScale$([NSArray arrayWithObjects:@"LockBackground.png", @"LockBackground.jpg", nil])))
-        return $getImage$(path);
-    return nil;
-}
-
-MSClassMessageHook0(UIImage *, UIImage, defaultDesktopImage) {
-    return $getDefaultDesktopImage$() ?: MSOldCall();
 }
 
 // %hook -[SBUIController init] {{{
@@ -1090,30 +936,7 @@ static void $addPerPageViews$(NSArray *lists) {
 }
 
 // %hook -[NSBundle localizedStringForKey:value:table:] {{{
-MSInstanceMessageHook3(NSString *, NSBundle, localizedStringForKey,value,table, NSString *, key, NSString *, value, NSString *, table) {
-    NSString *identifier = [self bundleIdentifier];
-    NSLocale *locale = [NSLocale currentLocale];
-    NSString *language = [locale objectForKey:NSLocaleLanguageCode];
-    if (Debug_)
-        NSLog(@"WB:Debug:[NSBundle(%@) localizedStringForKey:\"%@\" value:\"%@\" table:\"%@\"] (%@)", identifier, key, value, table, language);
-    NSString *file = table == nil ? @"Localizable" : table;
-    NSString *name = [NSString stringWithFormat:@"%@:%@", identifier, file];
-    NSDictionary *strings;
-    if ((strings = [Strings_ objectForKey:name]) != nil) {
-        if (static_cast<id>(strings) != [NSNull null]) strings:
-            if (NSString *value = [strings objectForKey:key])
-                return value;
-    } else if (NSString *path = $pathForFile$inBundle$([NSString stringWithFormat:@"%@.lproj/%@.strings",
-        language, file
-    ], self, false)) {
-        if ((strings = [[NSDictionary alloc] initWithContentsOfFile:path]) != nil) {
-            [Strings_ setObject:[strings autorelease] forKey:name];
-            goto strings;
-        } else goto null;
-    } else null:
-        [Strings_ setObject:[NSNull null] forKey:name];
-    return MSOldCall(key, value, table);
-}
+
 // }}}
 // %hook -[WebCoreFrameBridge renderedSizeOfNode:constrainedToWidth:] {{{
 MSClassHook(WebCoreFrameBridge)
